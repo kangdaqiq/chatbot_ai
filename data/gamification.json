@@ -56,9 +56,9 @@
     "userPhone": "6281234567890",
     "userName": "Siswa",
     "className": "",
-    "totalXp": "1515",
-    "level": 6,
-    "levelTitle": "Juara Kelas 🏆",
+    "totalXp": "151515",
+    "level": 8,
+    "levelTitle": "Grandmaster Akademi 🌌",
     "quizzesCompleted": 0,
     "averageScore": 0,
     "highestScore": 0,
@@ -77,11 +77,18 @@
         "description": "Mengumpulkan lebih dari 100 XP dari interaksi belajar aktif",
         "icon": "🏆",
         "unlockedAt": "2026-08-31T23:16:06.914Z"
+      },
+      {
+        "id": "active_questioner",
+        "name": "Penanya Kritis",
+        "description": "Aktif bertanya dan mendiskusikan materi pelajaran secara mendalam",
+        "icon": "💡",
+        "unlockedAt": "2026-08-31T23:24:23.745Z"
       }
     ],
-    "updatedAt": "2026-08-31T23:16:06.914Z",
-    "interactionXp": "1515",
-    "activeLearningCount": 2,
-    "lastInteractionDate": "2026-08-31T23:16:06.914Z"
+    "updatedAt": "2026-08-31T23:24:23.745Z",
+    "interactionXp": "151515",
+    "activeLearningCount": 3,
+    "lastInteractionDate": "2026-08-31T23:24:23.744Z"
   }
 ]

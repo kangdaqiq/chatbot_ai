@@ -27,19 +27,18 @@ export class McpAgentOrchestrator {
     history?: ChatMessageHistory[]
   ): Promise<McpExecutionResult> {
     const candidateModels = [
-      'gemini-1.5-flash',
+      'gemini-flash-lite-latest',
       'gemini-flash-latest',
-      'gemini-1.5-pro',
-      config.defaultModel,
-    ].filter((m) => m && m !== 'gemini-2.0-flash') as string[];
+    ];
 
     let lastError: any = null;
 
     for (const modelName of candidateModels) {
-      try {
-        const model = this.genAI.getGenerativeModel({
-          model: modelName,
-          systemInstruction: `
+      for (let attempt = 1; attempt <= 2; attempt++) {
+        try {
+          const model = this.genAI.getGenerativeModel({
+            model: modelName,
+            systemInstruction: `
 Kamu adalah "AI Tutor Bot (MCP Agent)", guru/tutor pribadi cerdas berbasis Model Context Protocol (MCP) untuk mata pelajaran ${subjectName}.
 
 PRINSIP PEMBELAJARAN METODE SOKRATIK:
@@ -206,10 +205,19 @@ Gunakan bahasa Indonesia yang ramah, santun, komunikatif, dan format Markdown Wh
         };
       } catch (err: any) {
         lastError = err;
-        console.warn(`[MCP AGENT] Model ${modelName} gagal: ${err?.message || err}. Mencoba model berikutnya...`);
+        const errMsg = err?.message || String(err);
+        const is503 = errMsg.includes('503') || errMsg.includes('high demand') || errMsg.includes('RESOURCE_EXHAUSTED');
+        if (is503 && attempt === 1) {
+          console.warn(`[MCP AGENT] Model ${modelName} 503 high demand spike, mencoba ulang dalam 1.5 detik...`);
+          await new Promise((r) => setTimeout(r, 1500));
+          continue;
+        }
+        console.warn(`[MCP AGENT] Model ${modelName} gagal: ${errMsg}. Mencoba model berikutnya...`);
+        break;
       }
     }
+  }
 
-    throw lastError || new Error('Semua model kandidat Gemini gagal dieksekusi.');
+  throw lastError || new Error('Semua model kandidat Gemini gagal dieksekusi.');
   }
 }
