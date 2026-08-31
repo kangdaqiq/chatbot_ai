@@ -56,7 +56,7 @@
     "userPhone": "6281234567890",
     "userName": "Siswa",
     "className": "",
-    "totalXp": "151515",
+    "totalXp": "1515151515",
     "level": 8,
     "levelTitle": "Grandmaster Akademi 🌌",
     "quizzesCompleted": 0,
@@ -86,9 +86,9 @@
         "unlockedAt": "2026-08-31T23:24:23.745Z"
       }
     ],
-    "updatedAt": "2026-08-31T23:24:23.745Z",
-    "interactionXp": "151515",
-    "activeLearningCount": 3,
-    "lastInteractionDate": "2026-08-31T23:24:23.744Z"
+    "updatedAt": "2026-08-31T23:28:53.118Z",
+    "interactionXp": "1515151515",
+    "activeLearningCount": 5,
+    "lastInteractionDate": "2026-08-31T23:28:53.118Z"
   }
 ]
