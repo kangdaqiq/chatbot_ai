@@ -123,9 +123,74 @@ graph TD
   /**
    * 5. Ilustrasi Konsep Sains & Edukasi Terlabel (Siklus Air, Fotosintesis, Sistem Organ, dsb)
    */
-  public async generateConceptIllustration(topic: string): Promise<Buffer | null> {
+  public async generateConceptIllustration(rawTopic: string): Promise<Buffer | null> {
+    const lower = rawTopic.toLowerCase();
+
+    // 1. Deteksi Presets Bagan Siklus Sains (Mermaid Edukatif Berbahasa Indonesia)
+    if (lower.includes('awan') || lower.includes('air') || lower.includes('hujan') || lower.includes('hidrologi')) {
+      return await this.generateMermaidDiagram({
+        type: 'flowchart',
+        data: {
+          code: `graph TD
+  A["☀️ 1. Evaporasi (Penguapan Air Laut & Danau)"] --> B["☁️ 2. Kondensasi (Uap Mendingin Jadi Awan)"]
+  B --> C["🌧️ 3. Koalesensi (Awan Mendung Menebal)"]
+  C --> D["⛈️ 4. Presipitasi (Titik Air Turun Sebagai Hujan)"]
+  D --> E["🌊 5. Infiltrasi & Aliran (Air Mengalir Kembali ke Laut)"]
+  E --> A`,
+        },
+      });
+    }
+
+    if (lower.includes('fotosintesis')) {
+      return await this.generateMermaidDiagram({
+        type: 'flowchart',
+        data: {
+          code: `graph LR
+  A["☀️ Cahaya Matahari"] --> D["🌿 Daun / Klorofil (Reaksi Fotosintesis)"]
+  B["💧 Air H2O dari Akar"] --> D
+  C["🌬️ Karbondioksida CO2"] --> D
+  D --> E["🍎 Glukosa / Makanan C6H12O6"]
+  D --> F["💨 Oksigen O2 Dilepaskan"]`,
+        },
+      });
+    }
+
+    if (lower.includes('rantai makanan')) {
+      return await this.generateMermaidDiagram({
+        type: 'flowchart',
+        data: {
+          code: `graph LR
+  A["☀️ Matahari"] --> B["🌱 Produsen (Tumbuhan/Rumput)"]
+  B --> C["🦗 Konsumen I (Herbivora/Belalang)"]
+  C --> D["🐸 Konsumen II (Karnivora/Katak)"]
+  D --> E["🦅 Konsumen III (Predator Puncak/Elang)"]
+  E --> F["🍄 Dekomposer (Pengurai/Jamur)"]
+  F --> B`,
+        },
+      });
+    }
+
+    if (lower.includes('metamorfosis')) {
+      return await this.generateMermaidDiagram({
+        type: 'flowchart',
+        data: {
+          code: `graph TD
+  A["🥚 1. Telur"] --> B["🐛 2. Ulat / Larva (Makan Daun)"]
+  B --> C["🥥 3. Kepompong / Pupa (Istirahat & Transformasi)"]
+  C --> D["🦋 4. Kupu-kupu Dewasa (Imago)"]
+  D --> A`,
+        },
+      });
+    }
+
+    // 2. Fallback ke Generator Ilustrasi Buku Pelajaran Sains (Clean English Prompt)
     try {
-      const prompt = `detailed educational textbook diagram of ${topic}, clearly labeled with terms, clean 2D science illustration, white background, sharp quality`;
+      // Bersihkan kata-kata percakapan non-konsep
+      const cleanTopic = rawTopic
+        .replace(/\b(umum|matematika|fisika|ipa|pai|informatika|sejarah|inggris|aku|mau|tau|kasih|minta|gambar|gambaran|diagram|siklus|bagan|itu|gimana|dong|ya|tolong)\b/gi, '')
+        .trim();
+
+      const prompt = `detailed science textbook diagram of ${cleanTopic || rawTopic}, labeled infographic illustration, educational biology physics chemistry chart, clean 2D vector style, high resolution, white background`;
       const url = `https://image.pollinations.ai/prompt/${encodeURIComponent(prompt)}?width=800&height=500&nologo=true`;
       return await this.fetchImageBuffer(url);
     } catch (err) {
