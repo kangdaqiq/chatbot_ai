@@ -1,0 +1,44 @@
+[
+  {
+    "id": "1",
+    "code": "MATH",
+    "name": "Matematika",
+    "description": "Aljabar, Eksponen, Logaritma, Vektor, Geometri",
+    "icon": "🧮"
+  },
+  {
+    "id": "2",
+    "code": "PHYS",
+    "name": "Fisika",
+    "description": "Gaya, Gerak, Usaha & Energi, Hukum Newton",
+    "icon": "🧪"
+  },
+  {
+    "id": "3",
+    "code": "ENG",
+    "name": "Bahasa Inggris",
+    "description": "Descriptive Text, Grammar, Vocabulary, Reading",
+    "icon": "🇬🇧"
+  },
+  {
+    "id": "4",
+    "code": "HIST",
+    "name": "Sejarah Indonesia",
+    "description": "Kemerdekaan, Kerajaan Nusantara, Sejarah Dunia",
+    "icon": "📜"
+  },
+  {
+    "id": "5",
+    "code": "PAI",
+    "name": "Pendidikan Agama Islam",
+    "description": "Al-Qur'an, Hadis, Aqidah, Akhlak, Fiqih, & Sejarah Islam",
+    "icon": "🕌"
+  },
+  {
+    "id": "6",
+    "code": "INF",
+    "name": "Informatika",
+    "description": "Algoritma, Pemrograman, Jaringan Komputer, & Analisis Data",
+    "icon": "💻"
+  }
+]

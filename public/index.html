@@ -1,0 +1,460 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AI Tutor WhatsApp - Control Panel & Gamified Learning Platform</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <div class="app-container">
+    <!-- SIDEBAR -->
+    <aside class="sidebar">
+      <div class="brand">
+        <div class="brand-icon">
+          <i class="fa-solid fa-robot"></i>
+        </div>
+        <div class="brand-text">
+          <h2>AI Learning Bot</h2>
+          <span>WhatsApp Dashboard</span>
+        </div>
+      </div>
+
+      <nav class="nav-menu">
+        <button class="nav-item active" data-tab="tab-overview">
+          <i class="fa-solid fa-gauge-high"></i>
+          <span>Dashboard & WA Scan</span>
+        </button>
+        <button class="nav-item" data-tab="tab-leaderboard">
+          <i class="fa-solid fa-trophy"></i>
+          <span>Leaderboard & Nilai</span>
+        </button>
+        <button class="nav-item" data-tab="tab-subjects">
+          <i class="fa-solid fa-book-open"></i>
+          <span>Mata Pelajaran</span>
+        </button>
+        <button class="nav-item" data-tab="tab-users">
+          <i class="fa-solid fa-user-graduate"></i>
+          <span>Guru & Siswa</span>
+        </button>
+        <button class="nav-item" data-tab="tab-materials">
+          <i class="fa-solid fa-file-pdf"></i>
+          <span>Upload Materi PDF</span>
+        </button>
+        <button class="nav-item" data-tab="tab-simulator">
+          <i class="fa-solid fa-comments"></i>
+          <span>Live Chat Simulator</span>
+        </button>
+      </nav>
+
+      <div class="sidebar-footer">
+        <div class="wa-status-badge disconnected" id="sidebarWaStatus">
+          <span class="status-dot"></span>
+          <span class="status-label">Memuat Status...</span>
+        </div>
+      </div>
+    </aside>
+
+    <!-- MAIN CONTENT AREA -->
+    <main class="main-content">
+      <!-- HEADER -->
+      <header class="top-header">
+        <div class="header-title">
+          <h1 id="pageTitle">Dashboard Utama</h1>
+          <p id="pageSubtitle">Pantau koneksi WhatsApp dan manajemen sistem bot pembelajaran AI</p>
+        </div>
+        <div class="header-actions">
+          <button class="btn btn-outline" onclick="fetchDashboardData()">
+            <i class="fa-solid fa-rotate"></i> Refresh
+          </button>
+        </div>
+      </header>
+
+      <!-- TAB 1: OVERVIEW & WA SCAN -->
+      <section class="tab-content active" id="tab-overview">
+        <!-- STATS CARDS -->
+        <div class="stats-grid">
+          <div class="stat-card">
+            <div class="stat-icon purple"><i class="fa-solid fa-book"></i></div>
+            <div class="stat-info">
+              <span class="stat-value" id="statSubjects">0</span>
+              <span class="stat-label">Mata Pelajaran</span>
+            </div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon cyan"><i class="fa-solid fa-users"></i></div>
+            <div class="stat-info">
+              <span class="stat-value" id="statUsers">0</span>
+              <span class="stat-label">Guru & Siswa Terdaftar</span>
+            </div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon emerald"><i class="fa-solid fa-file-lines"></i></div>
+            <div class="stat-info">
+              <span class="stat-value" id="statMaterials">0</span>
+              <span class="stat-label">Dokumen Materi PDF</span>
+              <small style="font-size: 11px; color: var(--emerald); font-weight: 600;" id="statChunks">(0 Chunks RAG)</small>
+            </div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon amber"><i class="fa-solid fa-award"></i></div>
+            <div class="stat-info">
+              <span class="stat-value" id="statQuizzes">0</span>
+              <span class="stat-label">Total Kuis Diselesaikan</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- WA SCAN & LOGS GRID -->
+        <div class="grid-2col">
+          <!-- WA QR CARD -->
+          <div class="card wa-qr-card">
+            <div class="card-header">
+              <h3><i class="fa-brands fa-whatsapp green-icon"></i> Koneksi WhatsApp</h3>
+              <span class="badge" id="waStatusBadge">DISCONNECTED</span>
+            </div>
+            <div class="card-body text-center">
+              <div class="qr-container" id="qrContainer">
+                <div class="qr-placeholder">
+                  <i class="fa-solid fa-qrcode"></i>
+                  <p>Memuat QR Code...</p>
+                </div>
+              </div>
+              <div class="qr-instructions" id="qrInstructions">
+                <p class="instruction-title">📌 Cara Scan Login WhatsApp:</p>
+                <ol>
+                  <li>Buka WhatsApp di HP Anda</li>
+                  <li>Ketuk menu <b>Titik Tiga</b> (kanan atas) / <b>Pengaturan</b></li>
+                  <li>Pilih <b>Perangkat Tertaut</b> (Linked Devices)</li>
+                  <li>Ketuk <b>Tautkan Perangkat</b> lalu scan QR Code di atas</li>
+                </ol>
+              </div>
+              <div id="waConnectedActions" style="display: none; margin-top: 18px;">
+                <button class="btn btn-danger" onclick="logoutWhatsApp()" id="btnLogoutWa">
+                  <i class="fa-solid fa-arrow-right-from-bracket"></i> Putuskan / Ganti Nomor WhatsApp
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- LOGS CARD -->
+          <div class="card logs-card">
+            <div class="card-header">
+              <h3><i class="fa-solid fa-terminal"></i> Log Aktivitas Real-Time</h3>
+              <button class="btn btn-sm btn-ghost" onclick="clearLogs()"><i class="fa-solid fa-trash"></i> Bersihkan</button>
+            </div>
+            <div class="card-body">
+              <div class="log-stream" id="logStream">
+                <div class="log-entry system">[SYSTEM] Dashboard terhubung ke server...</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- TAB 2: LEADERBOARD & REKAP NILAI (FITUR GAMIFIKASI) -->
+      <section class="tab-content" id="tab-leaderboard">
+        <div class="section-toolbar">
+          <div>
+            <h2>🏆 Papan Peringkat & Rekap Nilai Siswa</h2>
+            <p class="text-muted">Pantau prestasi belajar, perolehan XP, level siswa, dan ekspor rekapitulasi nilai.</p>
+          </div>
+          <div class="toolbar-actions">
+            <a href="/api/export-scores-csv" class="btn btn-success" id="btnExportCsv" download>
+              <i class="fa-solid fa-file-excel"></i> Ekspor Nilai (CSV / Excel)
+            </a>
+            <button class="btn btn-primary" onclick="fetchLeaderboardData()">
+              <i class="fa-solid fa-rotate"></i> Refresh Peringkat
+            </button>
+          </div>
+        </div>
+
+        <!-- PODIUM TOP 3 SHOWCASE -->
+        <div class="podium-container" id="podiumContainer">
+          <!-- Dynamic Podium Loaded via JavaScript -->
+          <div class="podium-loading">
+            <i class="fa-solid fa-spinner fa-spin"></i> Memuat Peringkat Teratas...
+          </div>
+        </div>
+
+        <!-- LEADERBOARD DATA TABLE -->
+        <div class="card mt-4">
+          <div class="card-header flex-between">
+            <h3><i class="fa-solid fa-list-ol"></i> Daftar Lengkap Peringkat Siswa</h3>
+            <div class="table-search-box">
+              <i class="fa-solid fa-magnifying-glass"></i>
+              <input type="text" id="leaderboardSearch" placeholder="Cari nama atau kelas siswa..." oninput="filterLeaderboardTable()">
+            </div>
+          </div>
+          <div class="card-body p-0">
+            <table class="data-table" id="leaderboardTable">
+              <thead>
+                <tr>
+                  <th width="70">Rank</th>
+                  <th>Siswa</th>
+                  <th>Kelas</th>
+                  <th>Level & Gelar</th>
+                  <th>Total XP</th>
+                  <th>Kuis Selesai</th>
+                  <th>Rata-rata Skor</th>
+                  <th>Streak</th>
+                  <th>Medali / Badges</th>
+                </tr>
+              </thead>
+              <tbody id="leaderboardTableBody">
+                <!-- Loaded dynamically -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- TAB 3: MATA PELAJARAN -->
+      <section class="tab-content" id="tab-subjects">
+        <div class="section-toolbar">
+          <h2>Daftar Mata Pelajaran Aktif</h2>
+          <button class="btn btn-primary" onclick="openModal('modalAddSubject')">
+            <i class="fa-solid fa-plus"></i> Tambah Mapel Baru
+          </button>
+        </div>
+        <div class="subjects-grid" id="subjectsGrid">
+          <!-- Subject cards loaded dynamically -->
+        </div>
+      </section>
+
+      <!-- TAB 4: NOMOR GURU & SISWA -->
+      <section class="tab-content" id="tab-users">
+        <div class="section-toolbar">
+          <h2>Manajemen Pengguna (Guru & Siswa)</h2>
+          <button class="btn btn-primary" onclick="openModal('modalAddUser')">
+            <i class="fa-solid fa-user-plus"></i> Tambah Pengguna Baru
+          </button>
+        </div>
+        <div class="card">
+          <div class="card-body p-0">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>Nama Lengkap</th>
+                  <th>Nomor WhatsApp</th>
+                  <th>Peran (Role)</th>
+                  <th>Kelas / Jabatan</th>
+                  <th>Aksi</th>
+                </tr>
+              </thead>
+              <tbody id="usersTableBody">
+                <!-- User rows loaded dynamically -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- TAB 5: UPLOAD MATERI PDF -->
+      <section class="tab-content" id="tab-materials">
+        <div class="section-toolbar">
+          <h2>Manajemen Dokumen Materi (Buku Guru / Modul PDF)</h2>
+        </div>
+
+        <div class="grid-2col">
+          <!-- UPLOAD CARD -->
+          <div class="card">
+            <div class="card-header">
+              <h3><i class="fa-solid fa-cloud-arrow-up"></i> Upload File PDF / Text Baru</h3>
+            </div>
+            <div class="card-body">
+              <form id="formUploadMaterial" onsubmit="uploadMaterialFile(event)">
+                <div class="drop-zone" id="dropZone" onclick="document.getElementById('fileInput').click()">
+                  <i class="fa-solid fa-file-pdf drop-icon"></i>
+                  <p class="drop-text">Klik atau seret file PDF / TXT / JSON ke sini</p>
+                  <span class="drop-sub">Format didukung: .pdf, .txt, .md, .json (Maks 50MB)</span>
+                  <input type="file" id="fileInput" name="pdfFile" accept=".pdf,.txt,.md,.json" style="display: none;" onchange="handleFileSelect(event)">
+                </div>
+                <div id="fileSelectedInfo" class="file-selected-info" style="display: none;">
+                  <i class="fa-solid fa-file-lines"></i>
+                  <span id="fileNameLabel">file_selected.pdf</span>
+                </div>
+                <button type="submit" class="btn btn-primary btn-block mt-3" id="btnSubmitUpload">
+                  <i class="fa-solid fa-upload"></i> Unggah Materi
+                </button>
+              </form>
+            </div>
+          </div>
+
+          <!-- MATERIALS LIST CARD -->
+          <div class="card">
+            <div class="card-header">
+              <h3><i class="fa-solid fa-folder-open"></i> File Kurikulum Tersimpan</h3>
+            </div>
+            <div class="card-body p-0">
+              <div class="materials-list" id="materialsList">
+                <!-- Loaded dynamically -->
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- RAG SEMANTIC SEARCH TESTER -->
+        <div class="card mt-4">
+          <div class="card-header">
+            <h3><i class="fa-solid fa-brain"></i> Uji Coba Semantic Search RAG (Retrieval-Augmented Generation)</h3>
+            <span class="badge" style="background: rgba(99, 102, 241, 0.2); color: #818cf8;">BM25 + Chunks Index</span>
+          </div>
+          <div class="card-body">
+            <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 15px;">
+              Uji coba pencarian cerdas untuk melihat potongan buku/modul kurikulum yang akan dirujuk oleh AI Tutor saat siswa bertanya.
+            </p>
+            <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+              <select id="ragSearchSubject" class="form-control" style="width: 220px; padding: 10px; border-radius: 8px; background: #1e293b; color: white; border: 1px solid #334155;">
+                <option value="Umum">Semua Mata Pelajaran</option>
+                <option value="Matematika">Matematika</option>
+                <option value="Fisika">Fisika</option>
+                <option value="Bahasa Inggris">Bahasa Inggris</option>
+                <option value="Sejarah Indonesia">Sejarah</option>
+                <option value="Pendidikan Agama Islam">Pendidikan Agama Islam</option>
+                <option value="Informatika">Informatika</option>
+              </select>
+              <input type="text" id="ragSearchQuery" placeholder="Ketik topik atau pertanyaan (cth: Aljabar, Tajwid, Descriptive Text)..." style="flex: 1; min-width: 250px; padding: 10px 14px; border-radius: 8px; background: #1e293b; color: white; border: 1px solid #334155;" onkeypress="if(event.key==='Enter') executeRagSearch()">
+              <button class="btn btn-primary" onclick="executeRagSearch()" id="btnRagSearch">
+                <i class="fa-solid fa-magnifying-glass"></i> Cari Rujukan
+              </button>
+            </div>
+            <div id="ragSearchResults" style="margin-top: 20px; display: none;">
+              <h5 style="color: #cbd5e1; margin-bottom: 10px; font-size: 14px;">Hasil Potongan Kurikulum yang Ditemukan:</h5>
+              <div id="ragResultsList" style="display: flex; flex-direction: column; gap: 12px;"></div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- TAB 6: LIVE CHAT SIMULATOR -->
+      <section class="tab-content" id="tab-simulator">
+        <div class="simulator-wrapper">
+          <div class="chat-phone-frame">
+            <div class="chat-header">
+              <div class="chat-avatar"><i class="fa-solid fa-robot"></i></div>
+              <div class="chat-title">
+                <h4>AI Tutor Bot</h4>
+                <span>Online (Simulasi Web)</span>
+              </div>
+            </div>
+            <div class="chat-body" id="chatSimulatorBody">
+              <div class="chat-message bot">
+                🤖 <b>AI LEARNING BOT WHATSAPP</b><br>
+                Selamat datang di Asisten Belajar Pintar!<br><br>
+                1️⃣ Pilih Mata Pelajaran<br>
+                2️⃣ Mulai Kuis Interaktif<br>
+                3️⃣ 🏆 Papan Peringkat & Profil<br>
+                4️⃣ Petunjuk Penggunaan<br><br>
+                <i>Ketik angka 1, 2, 3, atau 4:</i>
+              </div>
+            </div>
+            <div class="chat-footer">
+              <input type="text" id="chatInput" placeholder="Ketik pesan simulasi di sini..." onkeypress="handleChatKeyPress(event)">
+              <button class="btn-send" onclick="sendSimulatedMessage()"><i class="fa-solid fa-paper-plane"></i></button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+    </main>
+  </div>
+
+  <!-- MODAL ADD SUBJECT -->
+  <div class="modal-overlay" id="modalAddSubject">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3><i class="fa-solid fa-book-medical"></i> Tambah Mata Pelajaran Baru</h3>
+        <button class="close-btn" onclick="closeModal('modalAddSubject')">&times;</button>
+      </div>
+      <form onsubmit="handleAddSubject(event)">
+        <div class="modal-body">
+          <div class="form-group">
+            <label>Nama Mata Pelajaran</label>
+            <input type="text" id="subjectName" placeholder="Contoh: Biologi" required>
+          </div>
+          <div class="form-group">
+            <label>Kode Singkat</label>
+            <input type="text" id="subjectCode" placeholder="Contoh: BIO" required>
+          </div>
+          <div class="form-group">
+            <label>Emoji / Ikon</label>
+            <input type="text" id="subjectIcon" placeholder="Contoh: 🧬" value="📚">
+          </div>
+          <div class="form-group">
+            <label>Deskripsi Ringkas Materi</label>
+            <input type="text" id="subjectDesc" placeholder="Contoh: Sel, Ekosistem, Genetika">
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline" onclick="closeModal('modalAddSubject')">Batal</button>
+          <button type="submit" class="btn btn-primary">Simpan Mapel</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL ADD USER -->
+  <div class="modal-overlay" id="modalAddUser">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3><i class="fa-solid fa-user-plus"></i> Tambah Nomor Guru / Siswa</h3>
+        <button class="close-btn" onclick="closeModal('modalAddUser')">&times;</button>
+      </div>
+      <form onsubmit="handleAddUser(event)">
+        <div class="modal-body">
+          <div class="form-group">
+            <label>Nama Lengkap</label>
+            <input type="text" id="userName" placeholder="Contoh: Siti Rahma" required>
+          </div>
+          <div class="form-group">
+            <label>Nomor WhatsApp</label>
+            <input type="text" id="userPhone" placeholder="Contoh: 081234567890" required>
+          </div>
+          <div class="form-group">
+            <label>Role (Peran)</label>
+            <select id="userRole" required>
+              <option value="STUDENT">Siswa</option>
+              <option value="TEACHER">Guru / Pengajar</option>
+              <option value="ADMIN">Admin Sekolah</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Kelas / Jabatan</label>
+            <input type="text" id="userClass" placeholder="Contoh: X IPA 2 / Guru Fisika">
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline" onclick="closeModal('modalAddUser')">Batal</button>
+          <button type="submit" class="btn btn-primary">Daftarkan Pengguna</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL QUIZ HISTORY DETAIL -->
+  <div class="modal-overlay" id="modalQuizHistory">
+    <div class="modal-card modal-lg">
+      <div class="modal-header">
+        <h3><i class="fa-solid fa-clock-rotate-left"></i> Riwayat Pengerjaan Kuis Siswa</h3>
+        <button class="close-btn" onclick="closeModal('modalQuizHistory')">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div id="quizHistoryContent">
+          <!-- Loaded dynamically -->
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-outline" onclick="closeModal('modalQuizHistory')">Tutup</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>

@@ -1,0 +1,26 @@
+[
+  {
+    "id": "usr_1",
+    "name": "Pak Ahmad (Guru PAI)",
+    "phoneNumber": "6281234567890",
+    "role": "TEACHER",
+    "className": "Guru PAI Kelas 10",
+    "createdAt": "2026-08-08T12:53:23.480Z"
+  },
+  {
+    "id": "usr_2",
+    "name": "Budi Santoso",
+    "phoneNumber": "6289876543210",
+    "role": "STUDENT",
+    "className": "X IPA 1",
+    "createdAt": "2026-08-08T12:53:23.480Z"
+  },
+  {
+    "name": "Fandi",
+    "phoneNumber": "081524824563",
+    "role": "STUDENT",
+    "className": "",
+    "id": "usr_1786193852066",
+    "createdAt": "2026-08-08T12:57:32.066Z"
+  }
+]

@@ -1,0 +1,16 @@
+[
+  {
+    "subjectId": "3",
+    "subjectName": "Bahasa Inggris",
+    "grade": "SMA Kelas 10 (Kurikulum Merdeka)",
+    "chapter": "Bab 1: Great Athletes (Descriptive Text & Simple Past vs Present)",
+    "content": "Materi Bab 1 Kurikulum Merdeka Bahasa Inggris Kelas 10 membahas tentang Great Athletes.\nTopik utama:\n1. Descriptive Text: Menggambarkan fisik, kepribadian, dan prestasi seorang atlet ternama (misal: Greysia Polii, Cristiano Ronaldo).\n2. Vocabulary: Descriptive adjectives (athletic, determined, inspiring, agile).\n3. Grammar Focus: Simple Present Tense (untuk fakta atlet) dan Simple Past Tense (untuk menceritakan riwayat pencapaian masa lalu).\n4. Structuring Text: Identification (Pengenalan atlet) & Description (Rincian fisik dan keahlian)."
+  },
+  {
+    "subjectId": "1",
+    "subjectName": "Matematika",
+    "grade": "SMA Kelas 10 (Kurikulum Merdeka)",
+    "chapter": "Bab 1: Eksponen dan Logaritma",
+    "content": "Materi Bab 1 Matematika Kurikulum Merdeka Kelas 10:\nTopik utama:\n1. Eksponen (Bentuk Pangkat): Sifat-sifat eksponen (a^m * a^n = a^(m+n), (a^m)^n = a^(m*n), a^0 = 1).\n2. Fungsi Eksponen: Grafik pertumbuhan eksponensial (bakteri, bunga majemuk) dan peluruhan eksponensial (peluruhan radioaktif).\n3. Bentuk Akar: Menyederhanakan dan merasionalkan penyebut bentuk akar.\n4. Logaritma: Definisi ^a log b = c <=> a^c = b. Sifat-sifat logaritma (^a log (b*c) = ^a log b + ^a log c)."
+  }
+]

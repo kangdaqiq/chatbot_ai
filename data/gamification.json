@@ -1,0 +1,55 @@
+[
+  {
+    "userPhone": "6289876543210",
+    "userName": "Budi Santoso",
+    "className": "X IPA 1",
+    "totalXp": 100,
+    "level": 2,
+    "levelTitle": "Penuntut Ilmu 📖",
+    "quizzesCompleted": 1,
+    "averageScore": 100,
+    "highestScore": 100,
+    "currentStreak": 1,
+    "badges": [
+      {
+        "id": "first_quiz",
+        "name": "Langkah Pertama",
+        "description": "Menyelesaikan kuis pertama dengan sukses",
+        "icon": "🎯",
+        "unlockedAt": "2026-08-21T16:17:35.043Z"
+      },
+      {
+        "id": "perfect_100",
+        "name": "Nilai Sempurna",
+        "description": "Meraih skor sempurna 100 pada kuis",
+        "icon": "💯",
+        "unlockedAt": "2026-08-21T16:17:35.043Z"
+      }
+    ],
+    "updatedAt": "2026-08-21T16:17:35.043Z",
+    "lastQuizDate": "2026-08-21T16:17:35.043Z"
+  },
+  {
+    "userPhone": "6281524824563",
+    "userName": "Fandi",
+    "className": "X IPA 2",
+    "totalXp": 79,
+    "level": 1,
+    "levelTitle": "Siswa Pemula 🐣",
+    "quizzesCompleted": 1,
+    "averageScore": 70,
+    "highestScore": 70,
+    "currentStreak": 1,
+    "badges": [
+      {
+        "id": "first_quiz",
+        "name": "Langkah Pertama",
+        "description": "Menyelesaikan kuis pertama dengan sukses",
+        "icon": "🎯",
+        "unlockedAt": "2026-08-21T16:17:35.047Z"
+      }
+    ],
+    "updatedAt": "2026-08-21T16:17:35.047Z",
+    "lastQuizDate": "2026-08-21T16:17:35.047Z"
+  }
+]

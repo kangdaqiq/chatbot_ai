@@ -1,0 +1,24 @@
+[
+  {
+    "id": "quiz_rec_1787329055047",
+    "userPhone": "6281524824563",
+    "userName": "Fandi",
+    "subjectId": "2",
+    "subjectName": "Fisika",
+    "score": 70,
+    "totalQuestions": 3,
+    "xpEarned": 79,
+    "completedAt": "2026-08-21T16:17:35.047Z"
+  },
+  {
+    "id": "quiz_rec_1787329055044",
+    "userPhone": "6289876543210",
+    "userName": "Budi Santoso",
+    "subjectId": "1",
+    "subjectName": "Matematika",
+    "score": 100,
+    "totalQuestions": 3,
+    "xpEarned": 100,
+    "completedAt": "2026-08-21T16:17:35.044Z"
+  }
+]
