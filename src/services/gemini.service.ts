@@ -25,6 +25,36 @@ export class GeminiService {
   }
 
   /**
+   * Mengekstrak tag evaluasi [XP_EVAL:{"score":X,"reason":"..."}] dari respons AI
+   */
+  public static parseInteractionEvaluation(rawResponse: string): { text: string; xpEarned: number; reason: string } {
+    let text = rawResponse;
+    let xpEarned = 0;
+    let reason = '';
+
+    const match = rawResponse.match(/\[XP_EVAL:\s*(\{.*?\})\]/i);
+    if (match) {
+      try {
+        const parsed = JSON.parse(match[1]);
+        if (typeof parsed.score === 'number') {
+          xpEarned = Math.max(0, Math.min(15, Math.round(parsed.score)));
+        }
+        if (typeof parsed.reason === 'string') {
+          reason = parsed.reason;
+        }
+      } catch {
+        const scoreMatch = match[1].match(/"score"\s*:\s*(\d+)/);
+        if (scoreMatch) xpEarned = Math.min(15, parseInt(scoreMatch[1], 10));
+        const reasonMatch = match[1].match(/"reason"\s*:\s*"([^"]+)"/);
+        if (reasonMatch) reason = reasonMatch[1];
+      }
+      text = text.replace(match[0], '').trim();
+    }
+
+    return { text, xpEarned, reason };
+  }
+
+  /**
    * Menjelaskan materi pembelajaran ke siswa di WhatsApp dengan Metode Sokratik & Scaffolding
    */
   async explainConcept(subjectName: string, studentQuery: string, materialContext?: string, history?: ChatMessageHistory[]): Promise<string> {
@@ -49,6 +79,16 @@ ATURAN FORMAT & PENULISAN:
 4. Buat penjelasan yang ringkas dan terstruktur (maksimal 2-3 paragraf) agar siswa fokus membaca dan terdorong menjawab pertanyaan pemantiknya.
 5. ATURAN PENULISAN RUMUS/MATEMATIKA: WhatsApp TIDAK MENDUKUNG format LaTeX (seperti \\frac, \\times, atau tanda $). Selalu tulis rumus dengan teks biasa (misal: Luas = Panjang × Lebar).
 6. HANYA layani pertanyaan seputar pembelajaran dan materi sekolah. Bersikaplah adaptif dan ramah jika siswa menanyakan topik materi pelajaran terkait.
+
+EVALUASI KUALITAS & KESUNGGUHAN BELAJAR SISWA (ANALISIS CERDAS):
+Di baris PALING AKHIR responsmu, kamu WAJIB menyertakan tag evaluasi kesungguhan belajar siswa dengan format:
+[XP_EVAL:{"score":0-15,"reason":"Alasan singkat 2-4 kata"}]
+
+Pedoman Penilaian Analisis AI:
+- score 0 (Hanya Main-main / Spam / Basa-basi kosong): Siswa mengirim spam, kata kasar, ketikan asal ("wkwk", "p", "halo"), atau tidak ada niat belajar sama sekali.
+- score 3-5 (Rasa Ingin Tahu Edukatif): Siswa menanyakan materi/soal pelajaran secara serius untuk dipelajari.
+- score 8-10 (Penalaran Aktif & Usaha Mandiri): Siswa berusaha menjawab pertanyaan pancingan guru, mencoba menghitung rumus, atau memberikan analisis nalar mandiri.
+- score 12-15 (Pemahaman Mendalam & Analisis Kritis): Siswa menunjukkan pemahaman konsep yang matang atau berhasil memecahkan logika langkah demi langkah dengan sangat baik.
 `;
 
     let historyContext = '';
@@ -118,6 +158,10 @@ PRINSIP UTAMA:
    - Berikan petunjuk (clue), konsep, atau rumus kunci untuk mengerjakannya.
 3. AKHIRI DENGAN 1 PERTANYAAN PEMANTIK agar siswa mencoba menghitung atau menyelesaikan langkah pertamanya.
 4. Gunakan bahasa Indonesia yang ramah, sopan, berformat Markdown WhatsApp (*bold*, _italic_, emoji), dan tanpa LaTeX mentah.
+
+EVALUASI KUALITAS & KESUNGGUHAN BELAJAR SISWA:
+Sertakan tag evaluasi di baris paling akhir responsmu:
+[XP_EVAL:{"score":5-10,"reason":"Membahas soal tugas dari foto"}]
 `;
 
     const imagePart = {
@@ -169,6 +213,10 @@ PRINSIP UTAMA:
 2. JANGAN LANGSUNG MEMBERIKAN JAWABAN AKHIR secara instan.
 3. Bimbing pemikiran siswa: Jelaskan konsep dasarnya, berikan petunjuk (clue) yang jelas, dan akhiri dengan pertanyaan pemancing agar siswa menjawab langkah lanjutannya.
 4. Gunakan bahasa Indonesia yang ramah, santun, memotivasi, dan berformat Markdown WhatsApp.
+
+EVALUASI KUALITAS & KESUNGGUHAN BELAJAR SISWA:
+Sertakan tag evaluasi di baris paling akhir responsmu:
+[XP_EVAL:{"score":5-10,"reason":"Tanya jawab aktif via voice note"}]
 `;
 
     // Pastikan mimeType bersih (misal audio/ogg; codecs=opus -> audio/ogg)

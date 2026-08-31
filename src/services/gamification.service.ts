@@ -59,6 +59,24 @@ export class GamificationService {
       description: 'Rata-rata nilai di atas 90 setelah minimal 3 kuis',
       icon: '🎓',
     },
+    {
+      id: 'active_questioner',
+      name: 'Penanya Kritis',
+      description: 'Aktif bertanya dan mendiskusikan materi pelajaran secara mendalam',
+      icon: '💡',
+    },
+    {
+      id: 'deep_thinker',
+      name: 'Pemikir Hebat',
+      description: 'Menunjukkan penalaran kritis dan memecahkan bimbingan soal secara mandiri',
+      icon: '🧠',
+    },
+    {
+      id: 'study_enthusiast',
+      name: 'Siswa Teladan',
+      description: 'Mengumpulkan lebih dari 100 XP dari interaksi belajar aktif',
+      icon: '🏆',
+    },
   ];
 
   constructor() {
@@ -328,6 +346,83 @@ export class GamificationService {
     return {
       xpEarned,
       streakBonus,
+      profile,
+      levelUp,
+      oldLevel,
+      newLevel: profile.level,
+      newBadges,
+      rank,
+    };
+  }
+
+  /**
+   * Memberikan poin XP untuk interaksi belajar berkualitas (bukan sekadar main-main)
+   */
+  public recordInteractionReward(params: {
+    userPhone: string;
+    userName?: string;
+    className?: string;
+    xpEarned: number;
+    reason: string;
+    subjectName: string;
+  }): {
+    xpEarned: number;
+    profile: StudentGamificationProfile;
+    levelUp: boolean;
+    oldLevel: number;
+    newLevel: number;
+    newBadges: BadgeInfo[];
+    rank: number;
+  } {
+    const { userPhone, userName, className, xpEarned, reason, subjectName } = params;
+    const profile = this.getOrCreateProfile(userPhone, userName || 'Siswa', className || '');
+    const oldLevel = profile.level;
+
+    profile.interactionXp = (profile.interactionXp || 0) + xpEarned;
+    profile.activeLearningCount = (profile.activeLearningCount || 0) + 1;
+    profile.totalXp += xpEarned;
+    profile.lastInteractionDate = new Date().toISOString();
+    profile.updatedAt = new Date().toISOString();
+
+    // Evaluasi kenaikan level
+    const levelInfo = GamificationService.calculateLevel(profile.totalXp);
+    const levelUp = levelInfo.level > oldLevel;
+    profile.level = levelInfo.level;
+    profile.levelTitle = levelInfo.title;
+
+    // Evaluasi Medali Baru terkait interaksi
+    const newBadges: BadgeInfo[] = [];
+    const existingBadgeIds = new Set(profile.badges.map((b) => b.id));
+
+    if (!existingBadgeIds.has('active_questioner') && (profile.activeLearningCount || 0) >= 3) {
+      const b = GamificationService.AVAILABLE_BADGES.find((x) => x.id === 'active_questioner');
+      if (b) {
+        profile.badges.push({ ...b, unlockedAt: new Date().toISOString() });
+        newBadges.push(b);
+      }
+    }
+
+    if (!existingBadgeIds.has('deep_thinker') && xpEarned >= 10) {
+      const b = GamificationService.AVAILABLE_BADGES.find((x) => x.id === 'deep_thinker');
+      if (b) {
+        profile.badges.push({ ...b, unlockedAt: new Date().toISOString() });
+        newBadges.push(b);
+      }
+    }
+
+    if (!existingBadgeIds.has('study_enthusiast') && (profile.interactionXp || 0) >= 100) {
+      const b = GamificationService.AVAILABLE_BADGES.find((x) => x.id === 'study_enthusiast');
+      if (b) {
+        profile.badges.push({ ...b, unlockedAt: new Date().toISOString() });
+        newBadges.push(b);
+      }
+    }
+
+    this.saveData();
+    const rank = this.getUserRank(userPhone);
+
+    return {
+      xpEarned,
       profile,
       levelUp,
       oldLevel,

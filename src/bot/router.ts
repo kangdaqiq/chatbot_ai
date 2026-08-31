@@ -84,12 +84,30 @@ export class MessageRouter {
     const subjectName = subject ? subject.name : 'Umum';
 
     // Panggil Gemini Multimodal Audio untuk mendengarkan dan menjawab suara siswa
-    const aiExplanation = await this.gemini.explainAudioConcept(subjectName, audioBase64, mimeType, session.chatHistory);
+    const rawExplanation = await this.gemini.explainAudioConcept(subjectName, audioBase64, mimeType, session.chatHistory);
+    const { text: cleanExplanation, xpEarned, reason } = GeminiService.parseInteractionEvaluation(rawExplanation);
 
     // Simpan ke riwayat percakapan
-    this.sessionService.appendChatHistory(userPhone, '[Voice Note Siswa]', aiExplanation);
+    this.sessionService.appendChatHistory(userPhone, '[Voice Note Siswa]', cleanExplanation);
 
-    return aiExplanation;
+    let finalResponse = cleanExplanation;
+    if (xpEarned > 0) {
+      const reward = this.gamification.recordInteractionReward({
+        userPhone,
+        xpEarned,
+        reason: reason || 'Diskusi aktif via voice note',
+        subjectName,
+      });
+      finalResponse += `\n\n✨ _+${xpEarned} XP Belajar Aktif (${reason || 'Voice Note Edukatif'})_`;
+      if (reward.levelUp) {
+        finalResponse += `\n🎊 *Selamat! Kamu naik ke Level ${reward.newLevel}: ${reward.profile.levelTitle}!*`;
+      }
+      if (reward.newBadges.length > 0) {
+        finalResponse += `\n🎖️ *Medali Baru Terbuka: ${reward.newBadges[0].icon} ${reward.newBadges[0].name}!*`;
+      }
+    }
+
+    return finalResponse;
   }
 
   /**
@@ -103,7 +121,27 @@ export class MessageRouter {
     const subjectName = subject ? subject.name : 'Umum';
 
     // Panggil Gemini Multimodal (Vision)
-    return await this.gemini.explainImageConcept(subjectName, imageBase64, mimeType, caption);
+    const rawExplanation = await this.gemini.explainImageConcept(subjectName, imageBase64, mimeType, caption);
+    const { text: cleanExplanation, xpEarned, reason } = GeminiService.parseInteractionEvaluation(rawExplanation);
+
+    let finalResponse = cleanExplanation;
+    if (xpEarned > 0) {
+      const reward = this.gamification.recordInteractionReward({
+        userPhone,
+        xpEarned,
+        reason: reason || 'Membahas soal tugas dari foto',
+        subjectName,
+      });
+      finalResponse += `\n\n✨ _+${xpEarned} XP Belajar Aktif (${reason || 'Bedah Foto Soal'})_`;
+      if (reward.levelUp) {
+        finalResponse += `\n🎊 *Selamat! Kamu naik ke Level ${reward.newLevel}: ${reward.profile.levelTitle}!*`;
+      }
+      if (reward.newBadges.length > 0) {
+        finalResponse += `\n🎖️ *Medali Baru Terbuka: ${reward.newBadges[0].icon} ${reward.newBadges[0].name}!*`;
+      }
+    }
+
+    return finalResponse;
   }
 
   private renderMainMenu(): string {
@@ -261,11 +299,30 @@ export class MessageRouter {
     const history = session.chatHistory || [];
 
     // Tanya AI Gemini untuk menjelaskan materi dengan riwayat percakapan
-    const aiExplanation = await this.gemini.explainConcept(subjectName, text, curriculumContext, history);
+    const rawExplanation = await this.gemini.explainConcept(subjectName, text, curriculumContext, history);
+    const { text: cleanExplanation, xpEarned, reason } = GeminiService.parseInteractionEvaluation(rawExplanation);
 
-    // Simpan riwayat percakapan ke memori permanen
-    this.sessionService.appendChatHistory(userPhone, text, aiExplanation);
-    return aiExplanation;
+    // Simpan riwayat percakapan ke memori permanen (tanpa tag metadata)
+    this.sessionService.appendChatHistory(userPhone, text, cleanExplanation);
+
+    let finalResponse = cleanExplanation;
+    if (xpEarned > 0) {
+      const reward = this.gamification.recordInteractionReward({
+        userPhone,
+        xpEarned,
+        reason: reason || 'Belajar aktif & bernalar',
+        subjectName,
+      });
+      finalResponse += `\n\n✨ _+${xpEarned} XP Belajar Aktif (${reason || 'Interaksi Berkualitas'})_`;
+      if (reward.levelUp) {
+        finalResponse += `\n🎊 *Selamat! Kamu naik ke Level ${reward.newLevel}: ${reward.profile.levelTitle}!*`;
+      }
+      if (reward.newBadges.length > 0) {
+        finalResponse += `\n🎖️ *Medali Baru Terbuka: ${reward.newBadges[0].icon} ${reward.newBadges[0].name}!*`;
+      }
+    }
+
+    return finalResponse;
   }
 
   private async startQuizForSubject(userPhone: string, subjectName: string): Promise<string> {

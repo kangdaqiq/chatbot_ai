@@ -112,6 +112,8 @@ export interface StudentGamificationProfile {
   userName: string;
   className?: string;
   totalXp: number;
+  interactionXp?: number;
+  activeLearningCount?: number;
   level: number;
   levelTitle: string;
   quizzesCompleted: number;
@@ -119,11 +121,18 @@ export interface StudentGamificationProfile {
   highestScore: number;
   currentStreak: number;
   lastQuizDate?: string;
+  lastInteractionDate?: string;
   badges: BadgeInfo[];
   updatedAt: string;
 }
 
 export interface LeaderboardRow extends StudentGamificationProfile {
   rank: number;
+}
+
+export interface InteractionEvaluation {
+  text: string;
+  xpEarned: number;
+  reason: string;
 }
 

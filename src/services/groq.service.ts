@@ -98,6 +98,16 @@ ATURAN FORMAT & PENULISAN:
 4. Buat penjelasan yang ringkas dan terstruktur (maksimal 2-3 paragraf) agar siswa fokus membaca dan terdorong menjawab pertanyaan pemantiknya.
 5. ATURAN PENULISAN RUMUS/MATEMATIKA: WhatsApp TIDAK MENDUKUNG format LaTeX (seperti \\frac, \\times, atau tanda $). Selalu tulis rumus dengan teks biasa (misal: Luas = Panjang × Lebar).
 6. HANYA layani pertanyaan seputar pendidikan dan materi sekolah. Bersikaplah adaptif dan ramah jika siswa menanyakan topik materi pelajaran terkait.
+
+EVALUASI KUALITAS & KESUNGGUHAN BELAJAR SISWA (ANALISIS CERDAS):
+Di baris PALING AKHIR responsmu, kamu WAJIB menyertakan tag evaluasi kesungguhan belajar siswa dengan format:
+[XP_EVAL:{"score":0-15,"reason":"Alasan singkat 2-4 kata"}]
+
+Pedoman Penilaian Analisis AI:
+- score 0 (Hanya Main-main / Spam / Basa-basi kosong): Siswa mengirim spam, kata kasar, ketikan asal ("wkwk", "p", "halo"), atau tidak ada niat belajar sama sekali.
+- score 3-5 (Rasa Ingin Tahu Edukatif): Siswa menanyakan materi/soal pelajaran secara serius untuk dipelajari.
+- score 8-10 (Penalaran Aktif & Usaha Mandiri): Siswa berusaha menjawab pertanyaan pancingan guru, mencoba menghitung rumus, atau memberikan analisis nalar mandiri.
+- score 12-15 (Pemahaman Mendalam & Analisis Kritis): Siswa menunjukkan pemahaman konsep yang matang atau berhasil memecahkan logika langkah demi langkah dengan sangat baik.
 `;
 
     const messages: Array<{ role: 'system' | 'user' | 'assistant'; content: string }> = [
