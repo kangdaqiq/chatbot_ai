@@ -26,9 +26,21 @@ export class McpAgentOrchestrator {
     message: string,
     history?: ChatMessageHistory[]
   ): Promise<McpExecutionResult> {
-    const model = this.genAI.getGenerativeModel({
-      model: 'gemini-2.0-flash',
-      systemInstruction: `
+    const candidateModels = [
+      config.defaultModel,
+      'gemini-1.5-flash',
+      'gemini-1.5-pro',
+      'gemini-flash-latest',
+      'gemini-2.0-flash-exp',
+    ].filter(Boolean) as string[];
+
+    let lastError: any = null;
+
+    for (const modelName of candidateModels) {
+      try {
+        const model = this.genAI.getGenerativeModel({
+          model: modelName,
+          systemInstruction: `
 Kamu adalah "AI Tutor Bot (MCP Agent)", guru/tutor pribadi cerdas berbasis Model Context Protocol (MCP) untuk mata pelajaran ${subjectName}.
 
 PRINSIP PEMBELAJARAN METODE SOKRATIK:
@@ -184,14 +196,21 @@ Gunakan bahasa Indonesia yang ramah, santun, komunikatif, dan format Markdown Wh
       }
     }
 
-    return {
-      text: replyText.trim(),
-      imageBuffer,
-      audioBuffer,
-      xpEarned,
-      xpReason,
-      badgeUnlocked,
-      levelUp,
-    };
+        return {
+          text: replyText.trim(),
+          imageBuffer,
+          audioBuffer,
+          xpEarned,
+          xpReason,
+          badgeUnlocked,
+          levelUp,
+        };
+      } catch (err: any) {
+        lastError = err;
+        console.warn(`[MCP AGENT] Model ${modelName} gagal: ${err?.message || err}. Mencoba model berikutnya...`);
+      }
+    }
+
+    throw lastError || new Error('Semua model kandidat Gemini gagal dieksekusi.');
   }
 }

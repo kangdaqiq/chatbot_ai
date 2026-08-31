@@ -51,5 +51,37 @@
     ],
     "updatedAt": "2026-08-21T16:17:35.047Z",
     "lastQuizDate": "2026-08-21T16:17:35.047Z"
+  },
+  {
+    "userPhone": "6281234567890",
+    "userName": "Siswa",
+    "className": "",
+    "totalXp": "1515",
+    "level": 6,
+    "levelTitle": "Juara Kelas 🏆",
+    "quizzesCompleted": 0,
+    "averageScore": 0,
+    "highestScore": 0,
+    "currentStreak": 0,
+    "badges": [
+      {
+        "id": "deep_thinker",
+        "name": "Pemikir Hebat",
+        "description": "Menunjukkan penalaran kritis dan memecahkan bimbingan soal secara mandiri",
+        "icon": "🧠",
+        "unlockedAt": "2026-08-31T23:16:03.029Z"
+      },
+      {
+        "id": "study_enthusiast",
+        "name": "Siswa Teladan",
+        "description": "Mengumpulkan lebih dari 100 XP dari interaksi belajar aktif",
+        "icon": "🏆",
+        "unlockedAt": "2026-08-31T23:16:06.914Z"
+      }
+    ],
+    "updatedAt": "2026-08-31T23:16:06.914Z",
+    "interactionXp": "1515",
+    "activeLearningCount": 2,
+    "lastInteractionDate": "2026-08-31T23:16:06.914Z"
   }
 ]
