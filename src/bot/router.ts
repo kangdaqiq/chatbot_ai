@@ -39,13 +39,18 @@ export class MessageRouter {
     const cleanText = text.trim();
     const lowerText = cleanText.toLowerCase();
 
-    // Command global untuk kembali ke menu utama kapan saja
-    if (lowerText === 'menu' || lowerText === 'batal' || lowerText === 'keluar' || lowerText === 'home') {
-      this.sessionService.resetSession(userPhone);
-      return this.renderMainMenu();
+    // 1. Jika sedang dalam proses Kuis
+    if (session.state === 'QUIZ_IN_PROGRESS') {
+      if (lowerText === 'batal' || lowerText === 'keluar' || lowerText === 'stop' || lowerText === 'selesai' || lowerText === 'menu') {
+        session.state = 'TUTOR_QA';
+        session.activeQuiz = undefined;
+        this.sessionService.updateSession(session);
+        return `✅ *Sesi kuis dihentikan.* Kamu kembali ke mode diskusi belajar dengan AI Tutor! 💡\nSilakan tanyakan materi apa pun yang ingin kamu pelajari.`;
+      }
+      return this.handleQuizInProgress(userPhone, cleanText);
     }
 
-    // Direct Shortcuts untuk Leaderboard & Profil kapan saja
+    // 2. Direct Shortcuts untuk Leaderboard & Profil
     if (lowerText === 'leaderboard' || lowerText === 'rank' || lowerText === 'peringkat') {
       return this.renderLeaderboard(userPhone);
     }
@@ -54,24 +59,32 @@ export class MessageRouter {
       return this.renderProfile(userPhone);
     }
 
-    // Handlers berdasarkan State User
-    switch (session.state) {
-      case 'IDLE':
-        return this.handleIdleState(userPhone, cleanText);
-
-      case 'SELECTING_SUBJECT':
-        return this.handleSubjectSelection(userPhone, cleanText);
-
-      case 'TUTOR_QA':
-        return this.handleTutorQA(userPhone, cleanText);
-
-      case 'QUIZ_IN_PROGRESS':
-        return this.handleQuizInProgress(userPhone, cleanText);
-
-      default:
-        this.sessionService.resetSession(userPhone);
-        return this.renderMainMenu();
+    // 3. Shortcut Kuis Interaktif
+    if (lowerText === 'kuis' || lowerText === 'quiz' || lowerText === 'mulai kuis' || lowerText === 'latihan soal') {
+      const currentSubject = this.sessionService.getSubjectById(session.activeSubjectId || '1');
+      const subjectName = currentSubject ? currentSubject.name : 'Umum';
+      session.state = 'QUIZ_IN_PROGRESS';
+      this.sessionService.updateSession(session);
+      return await this.startQuizForSubject(userPhone, subjectName);
     }
+
+    // 4. Shortcut Bantuan / Panduan Belajar
+    if (lowerText === 'bantuan' || lowerText === 'help' || lowerText === 'panduan' || lowerText === 'petunjuk' || lowerText === 'menu') {
+      let help = `🤖 *AI TUTOR BELAJAR PINTAR*\n\n`;
+      help += `Silakan langsung kirim pertanyaan atau materi sekolah yang ingin kamu pelajari! AI Tutor siap membimbingmu langkah demi langkah 💡.\n\n`;
+      help += `• 💬 *Tanya Belajar*: Ketik pertanyaanmu secara bebas (Matematika, IPA/Fisika, PAI, Bahasa Inggris, Sejarah, Informatika, dsb).\n`;
+      help += `• 📸 *Foto Soal*: Kirim foto tugas/soal untuk dibahas konsep & cara penyelesaiannya bersama.\n`;
+      help += `• 🎙️ *Voice Note*: Kirim rekaman suara jika ingin bertanya via audio.\n`;
+      help += `• 📝 *Kuis*: Ketik *KUIS* untuk latihan soal berpikir kritis & menguji pemahaman.\n`;
+      help += `• 🏆 *Leaderboard*: Ketik *LEADERBOARD* untuk cek peringkat keaktifan kelas.\n`;
+      help += `• ⭐ *Profil*: Ketik *PROFIL* untuk melihat total XP, level, dan medali prestasimu.\n`;
+      return help;
+    }
+
+    // 5. SEMUA PESAN LAINNYA LANGSUNG DIPROSES OLEH AI TUTOR (Direct Conversational Learning)
+    session.state = 'TUTOR_QA';
+    this.sessionService.updateSession(session);
+    return this.handleTutorQA(userPhone, cleanText);
   }
 
   /**
@@ -142,62 +155,6 @@ export class MessageRouter {
     }
 
     return finalResponse;
-  }
-
-  private renderMainMenu(): string {
-    let menu = `🤖 *AI LEARNING BOT WHATSAPP*\n`;
-    menu += `Selamat datang di Asisten Belajar Pintar!\n\n`;
-    menu += `Silakan pilih menu di bawah ini:\n`;
-    menu += `1️⃣ Pilih Mata Pelajaran (Belajar & Tanya AI)\n`;
-    menu += `2️⃣ Mulai Kuis Interaktif (Dapatkan XP!)\n`;
-    menu += `3️⃣ 🏆 Papan Peringkat & Profil Prestasi\n`;
-    menu += `4️⃣ 📖 Petunjuk Penggunaan\n\n`;
-    menu += `_Ketik angka 1, 2, 3, atau 4 untuk memilih:_`;
-    return menu;
-  }
-
-  private handleIdleState(userPhone: string, text: string): string {
-    const session = this.sessionService.getSession(userPhone);
-    const cleanLower = text.toLowerCase();
-
-    if (text === '1' || cleanLower.includes('belajar') || cleanLower.includes('mapel')) {
-      session.state = 'SELECTING_SUBJECT';
-      this.sessionService.updateSession(session);
-      return this.renderSubjectMenu('pembelajaran & Tanya AI');
-    }
-
-    if (text === '2' || cleanLower.includes('kuis')) {
-      session.state = 'SELECTING_SUBJECT';
-      this.sessionService.updateSession(session);
-      return this.renderSubjectMenu('kuis interaktif');
-    }
-
-    if (text === '3' || cleanLower.includes('leaderboard') || cleanLower.includes('peringkat') || cleanLower.includes('skor') || cleanLower.includes('profil')) {
-      return this.renderLeaderboard(userPhone);
-    }
-
-    if (text === '4' || cleanLower.includes('bantuan') || cleanLower.includes('petunjuk')) {
-      let help = `📖 *PETUNJUK PENGGUNAAN*\n\n`;
-      help += `• *Tanya AI*: Pilih mapel lalu ketik pertanyaan (cth: "Jelaskan Hukum Newton 1").\n`;
-      help += `• *Kuis*: Jawab soal pilihan ganda (A/B/C/D) untuk mengumpulkan XP & Medali.\n`;
-      help += `• *Leaderboard*: Ketik *LEADERBOARD* untuk melihat posisi ranking kelasmu.\n`;
-      help += `• *Profil*: Ketik *PROFIL* untuk melihat total XP, level, dan medali terkumpul.\n`;
-      help += `• *Foto Soal*: Kirim foto tugas/soal untuk dibahas langkah demi langkah.\n`;
-      help += `• *Navigasi*: Ketik *MENU* kapan saja untuk kembali ke tampilan awal.\n\n`;
-      help += `Ketik *MENU* untuk mulai.`;
-      return help;
-    }
-
-    return `Pilihan tidak dikenali.\n\n` + this.renderMainMenu();
-  }
-
-  private renderSubjectMenu(purpose: string): string {
-    let text = `📚 *PILIH MATA PELAJARAN* (${purpose})\n\n`;
-    SessionService.SUBJECTS.forEach((sub) => {
-      text += `${sub.icon} *[${sub.id}]* ${sub.name} - _${sub.description}_\n`;
-    });
-    text += `\n_Ketik nomor angka mapel pilihanmu (cth: 1):_`;
-    return text;
   }
 
   private findSubjectByQuery(query: string) {
@@ -368,8 +325,10 @@ export class MessageRouter {
     const quiz = session.activeQuiz;
 
     if (!quiz || !quiz.questions[session.currentQuestionIndex]) {
-      this.sessionService.resetSession(userPhone);
-      return `Sesi kuis telah berakhir.\n\n` + this.renderMainMenu();
+      session.state = 'TUTOR_QA';
+      session.activeQuiz = undefined;
+      this.sessionService.updateSession(session);
+      return `Sesi kuis telah berakhir. Kamu kembali ke mode diskusi belajar dengan AI Tutor! 💡 Silakan tanyakan materi apa pun yang ingin kamu pelajari.`;
     }
 
     const currentQ = quiz.questions[session.currentQuestionIndex];
@@ -429,7 +388,8 @@ export class MessageRouter {
         userAnswers: session.userAnswers,
       });
 
-      session.state = 'IDLE';
+      session.state = 'TUTOR_QA';
+      session.activeQuiz = undefined;
       this.sessionService.updateSession(session);
 
       let summary = feedback + `\n🏆 *KUIS SELESAI!*\n`;
@@ -456,8 +416,8 @@ export class MessageRouter {
         });
       }
 
-      summary += `\n` + (finalScore >= 70 ? `🌟 *Luar biasa! Pertahankan prestasi belajarmu!*` : `💪 *Bagus sekali! Pelajari lagi materinya untuk raih nilai 100!*`);
-      summary += `\n\n💡 _Ketik *LEADERBOARD* untuk cek peringkat atau *MENU* untuk kembali._`;
+      summary += `\n` + (finalScore >= 70 ? `🌟 *Luar biasa! Pertahankan proses belajarmu!*` : `💪 *Bagus sekali! Tetap semangat eksplorasi materi bersama AI Tutor!*`);
+      summary += `\n\n💡 _Silakan langsung tanyakan materi apa pun ke AI Tutor atau ketik *LEADERBOARD* untuk cek ranking._`;
       return summary;
     }
 

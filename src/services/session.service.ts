@@ -63,7 +63,7 @@ export class SessionService {
     if (!session) {
       session = {
         userPhone,
-        state: 'IDLE',
+        state: 'TUTOR_QA',
         currentQuestionIndex: 0,
         score: 0,
         userAnswers: [],
@@ -86,11 +86,11 @@ export class SessionService {
     const existing = this.sessions.get(userPhone);
     this.sessions.set(userPhone, {
       userPhone,
-      state: 'IDLE',
+      state: 'TUTOR_QA',
       currentQuestionIndex: 0,
       score: 0,
       userAnswers: [],
-      chatHistory: existing?.chatHistory || [], // Pertahankan histori chat meski menu di-reset
+      chatHistory: existing?.chatHistory || [],
       lastActiveAt: new Date().toISOString(),
     });
     this.saveSessions();
