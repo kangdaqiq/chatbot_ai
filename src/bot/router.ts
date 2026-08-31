@@ -4,6 +4,7 @@ import { CurriculumService } from '../services/curriculum.service';
 import { GamificationService } from '../services/gamification.service';
 import { AudioService } from '../services/audio.service';
 import { DiagramService } from '../services/diagram.service';
+import { McpAgentOrchestrator } from '../mcp/orchestrator';
 import { DataStore } from '../web/dataStore';
 import { Quiz, QuizQuestion, UserSession } from '../models/types';
 
@@ -21,6 +22,7 @@ export class MessageRouter {
   private gamification: GamificationService;
   private audioService: AudioService;
   private diagramService: DiagramService;
+  private mcpOrchestrator: McpAgentOrchestrator;
   private dataStore: DataStore;
 
   constructor() {
@@ -30,6 +32,7 @@ export class MessageRouter {
     this.gamification = new GamificationService();
     this.audioService = new AudioService();
     this.diagramService = new DiagramService();
+    this.mcpOrchestrator = new McpAgentOrchestrator();
     this.dataStore = new DataStore();
   }
 
@@ -274,28 +277,47 @@ export class MessageRouter {
     const currentSubject = this.sessionService.getSubjectById(session.activeSubjectId || '1');
     const subjectName = currentSubject ? currentSubject.name : 'Umum';
 
-    // Ambil konteks potongan kurikulum sekolah yang relevan menggunakan RAG Engine
+    try {
+      // 1. Eksekusi via Arsitektur MCP Agent (Function / Tool Calling Standar)
+      const mcpResult = await this.mcpOrchestrator.executeUserMessage(
+        userPhone,
+        subjectName,
+        text,
+        session.chatHistory
+      );
+
+      this.sessionService.appendChatHistory(userPhone, text, mcpResult.text);
+
+      let imageBuffer = mcpResult.imageBuffer;
+      // Fallback ilustrasi jika siswa minta gambar dan belum ada diagram
+      if (!imageBuffer && MessageRouter.isVisualRequested(text)) {
+        imageBuffer = await this.diagramService.generateConceptIllustration(`${subjectName} ${text}`);
+      }
+
+      return {
+        text: mcpResult.text,
+        imageBuffer,
+        audioBuffer: mcpResult.audioBuffer,
+      };
+    } catch (err: any) {
+      console.error('MCP Agent execution error, using fallback:', err?.message || err);
+    }
+
+    // 2. Fallback jika MCP offline
     const curriculumContext = this.curriculumService.getRelevantContext(subjectName, text);
     const history = session.chatHistory || [];
 
-    // Tanya AI Gemini untuk menjelaskan materi dengan riwayat percakapan
     const rawExplanation = await this.gemini.explainConcept(subjectName, text, curriculumContext, history);
-
-    // 1. Ekstrak tag diagram visual jika ada
     const { cleanText: textNoDiagram, diagramReq } = DiagramService.parseDiagramTag(rawExplanation);
     let imageBuffer: Buffer | null = null;
     if (diagramReq) {
       imageBuffer = await this.diagramService.generateDiagramBuffer(diagramReq);
     }
 
-    // 2. Ekstrak evaluasi gamifikasi XP
     const { text: cleanExplanation, xpEarned, reason } = GeminiService.parseInteractionEvaluation(textNoDiagram);
-
-    // 3. Ekstrak bagian audio [SPEECH] (dan bersihkan tag dari teks agar tidak bocor)
     const isUserExplicitlyAskingAudio = AudioService.isAudioRequested(text);
     const { speechText, lang, cleanText: textNoSpeech } = AudioService.extractSpeechText(cleanExplanation, isUserExplicitlyAskingAudio);
 
-    // Simpan riwayat percakapan ke memori permanen (tanpa tag metadata)
     this.sessionService.appendChatHistory(userPhone, text, textNoSpeech);
 
     let finalResponse = textNoSpeech;
@@ -315,13 +337,11 @@ export class MessageRouter {
       }
     }
 
-    // 4. Generate balasan Voice Note audio HANYA jika ada speechText
     let audioBuffer: Buffer | null = null;
     if (speechText && speechText.length > 2) {
       audioBuffer = await this.audioService.generateVoiceNoteBuffer(speechText, lang);
     }
 
-    // 5. Cek jika siswa secara spesifik meminta gambar/diagram visual tetapi belum ada tag diagram
     if (!imageBuffer && MessageRouter.isVisualRequested(text)) {
       imageBuffer = await this.diagramService.generateConceptIllustration(`${subjectName} ${text}`);
     }
