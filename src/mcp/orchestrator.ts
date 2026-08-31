@@ -27,12 +27,11 @@ export class McpAgentOrchestrator {
     history?: ChatMessageHistory[]
   ): Promise<McpExecutionResult> {
     const candidateModels = [
-      config.defaultModel,
       'gemini-1.5-flash',
-      'gemini-1.5-pro',
       'gemini-flash-latest',
-      'gemini-2.0-flash-exp',
-    ].filter(Boolean) as string[];
+      'gemini-1.5-pro',
+      config.defaultModel,
+    ].filter((m) => m && m !== 'gemini-2.0-flash') as string[];
 
     let lastError: any = null;
 
