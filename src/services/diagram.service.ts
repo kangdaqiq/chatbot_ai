@@ -6,20 +6,66 @@ export interface DiagramRequest {
 
 export class DiagramService {
   /**
-   * Mengekstrak tag [DIAGRAM:{...}] dari teks AI
+   * Mengekstrak tag visual diagram ([DIAGRAM:flowchart] ... [/DIAGRAM] atau format JSON) dari teks AI
    */
   public static parseDiagramTag(text: string): { cleanText: string; diagramReq: DiagramRequest | null } {
     let cleanText = text;
     let diagramReq: DiagramRequest | null = null;
 
-    const match = text.match(/\[DIAGRAM:\s*(\{.*?\})\]/i);
-    if (match) {
-      try {
-        diagramReq = JSON.parse(match[1]) as DiagramRequest;
-      } catch (err) {
-        console.error('Failed to parse DIAGRAM json:', err);
+    // 1. FORMAT UTAMA: Blok [DIAGRAM:flowchart] ... [/DIAGRAM] (Paling Bersih & Kebal Karakter Khusus)
+    const blockMatch = text.match(/\[DIAGRAM(?::([a-z0-9_-]+))?\]([\s\S]*?)\[\/DIAGRAM\]/i);
+    if (blockMatch) {
+      const type = (blockMatch[1] || 'flowchart').toLowerCase() as any;
+      const rawContent = blockMatch[2].trim();
+
+      if (type === 'geometry') {
+        const shape = (rawContent.match(/shape:\s*([^\n]+)/i)?.[1] || 'triangle').trim();
+        const a = rawContent.match(/a:\s*([^\n]+)/i)?.[1]?.trim() || '';
+        const b = rawContent.match(/b:\s*([^\n]+)/i)?.[1]?.trim() || '';
+        const c = rawContent.match(/c:\s*([^\n]+)/i)?.[1]?.trim() || '';
+        const r = rawContent.match(/r:\s*([^\n]+)/i)?.[1]?.trim() || '';
+        const s = rawContent.match(/s:\s*([^\n]+)/i)?.[1]?.trim() || '';
+        diagramReq = {
+          type: 'geometry',
+          data: { shape, a, b, c, r, s },
+        };
+      } else if (type === 'venn') {
+        const setA = rawContent.match(/setA:\s*([^\n]+)/i)?.[1]?.trim() || 'Himpunan A';
+        const setB = rawContent.match(/setB:\s*([^\n]+)/i)?.[1]?.trim() || 'Himpunan B';
+        const intersection = rawContent.match(/intersection:\s*([^\n]+)/i)?.[1]?.trim() || 'A ∩ B';
+        diagramReq = {
+          type: 'venn',
+          data: { setA, setB, intersection },
+        };
+      } else {
+        diagramReq = {
+          type: type || 'flowchart',
+          data: { code: rawContent },
+        };
       }
-      cleanText = text.replace(match[0], '').trim();
+
+      cleanText = text.replace(blockMatch[0], '').trim();
+      return { cleanText, diagramReq };
+    }
+
+    // 2. FORMAT CADANGAN: JSON atau format [DIAGRAM: ... }}DIAGRAM]
+    const legacyMatch = text.match(/\[DIAGRAM:([\s\S]*?)(?:\[\/DIAGRAM\]|\}\}DIAGRAM\]|\])/i);
+    if (legacyMatch) {
+      const rawInner = legacyMatch[1].trim();
+      try {
+        diagramReq = JSON.parse(rawInner) as DiagramRequest;
+      } catch {
+        // Fallback jika memuat kode mermaid graph
+        const graphMatch = rawInner.match(/graph\s+(?:TD|LR|TB|BT)[\s\S]*/i);
+        if (graphMatch) {
+          let code = graphMatch[0].replace(/"\s*\}*$/i, '').replace(/\\"/g, '"').trim();
+          diagramReq = {
+            type: 'flowchart',
+            data: { code },
+          };
+        }
+      }
+      cleanText = text.replace(legacyMatch[0], '').trim();
     }
 
     return { cleanText, diagramReq };
