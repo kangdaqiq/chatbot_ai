@@ -150,9 +150,9 @@ export class MessageRouter {
       }
     }
 
-    // Generate Balasan Voice Note Dua Arah (Dua Arah Audio VN)
-    const lang = AudioService.detectLanguage(cleanExplanation);
-    const audioBuffer = await this.audioService.generateVoiceNoteBuffer(cleanExplanation, lang);
+    // Generate Balasan Voice Note Dua Arah (Hanya teks yang dibutuhkan saja)
+    const { speechText, lang } = AudioService.extractSpeechText(cleanExplanation);
+    const audioBuffer = await this.audioService.generateVoiceNoteBuffer(speechText, lang);
 
     return {
       text: finalResponse,
@@ -308,12 +308,12 @@ export class MessageRouter {
       }
     }
 
-    // 3. Cek apakah perlu balasan suara / audio VN (misal diminta siswa atau latihan speaking)
+    // 3. Cek apakah perlu balasan suara / audio VN (misal diminta siswa atau latihan speaking/listening)
     let audioBuffer: Buffer | null = null;
-    const isAudioRequested = AudioService.isAudioRequested(text) || (detectedSubject?.code === 'ENG' && cleanLower.includes('speaking'));
+    const isAudioRequested = AudioService.isAudioRequested(text) || (detectedSubject?.code === 'ENG' && (cleanLower.includes('speaking') || cleanLower.includes('listening') || cleanLower.includes('dengar') || cleanLower.includes('suara')));
     if (isAudioRequested) {
-      const lang = AudioService.detectLanguage(cleanExplanation);
-      audioBuffer = await this.audioService.generateVoiceNoteBuffer(cleanExplanation, lang);
+      const { speechText, lang } = AudioService.extractSpeechText(cleanExplanation);
+      audioBuffer = await this.audioService.generateVoiceNoteBuffer(speechText, lang);
     }
 
     // 4. Cek jika siswa secara spesifik meminta gambar/diagram visual tetapi belum ada tag diagram
