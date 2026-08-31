@@ -8,7 +8,8 @@
     "start": "node dist/server.js",
     "dev": "ts-node --transpile-only src/server.ts",
     "sim": "ts-node --transpile-only src/index.ts --sim",
-    "bot-cli": "ts-node --transpile-only src/index.ts"
+    "bot-cli": "ts-node --transpile-only src/index.ts",
+    "mcp:test": "ts-node --transpile-only src/mcp/index.ts"
   },
   "keywords": [
     "whatsapp-bot",
@@ -21,6 +22,7 @@
   "license": "ISC",
   "dependencies": {
     "@google/generative-ai": "^0.21.0",
+    "@modelcontextprotocol/sdk": "^1.30.0",
     "@types/express": "^5.0.6",
     "@types/express-fileupload": "^1.5.1",
     "@types/pdf-parse": "^1.1.5",
@@ -34,7 +36,8 @@
     "pdf-parse": "^2.4.5",
     "qrcode": "^1.5.4",
     "qrcode-terminal": "^0.12.0",
-    "ws": "^8.21.3"
+    "ws": "^8.21.3",
+    "zod": "^4.5.4"
   },
   "devDependencies": {
     "@types/node": "^22.13.1",
