@@ -237,14 +237,14 @@ export class GamificationService {
     }
     profile.lastQuizDate = new Date().toISOString();
 
-    // Bonus streak (jika streak >= 3 hari, dapat bonus 25 XP)
+    // Bonus streak harian kuis (ringan)
     if (profile.currentStreak >= 3) {
-      streakBonus = 25;
+      streakBonus = 10;
     }
 
-    // 2. Hitung Perolehan XP:
-    // Base XP: 30 + (skor * 0.7) -> Skor 100 = 100 XP, Skor 67 = 77 XP
-    const baseQuizXp = Math.round(30 + (score * 0.7));
+    // 2. Hitung Perolehan XP Kuis (Sebagai checkpoint pemahaman ringan, bukan sumber utama XP):
+    // Nilai 100 = 20 XP, Nilai 67 = 15 XP, Nilai 33 = 10 XP
+    const baseQuizXp = Math.round(5 + (score * 0.15));
     const xpEarned = baseQuizXp + streakBonus;
 
     profile.totalXp += xpEarned;
