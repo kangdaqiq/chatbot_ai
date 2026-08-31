@@ -288,10 +288,13 @@ export class MessageRouter {
     // 2. Ekstrak evaluasi gamifikasi XP
     const { text: cleanExplanation, xpEarned, reason } = GeminiService.parseInteractionEvaluation(textNoDiagram);
 
-    // Simpan riwayat percakapan ke memori permanen (tanpa tag metadata)
-    this.sessionService.appendChatHistory(userPhone, text, cleanExplanation);
+    // 3. Ekstrak bagian audio [SPEECH] (dan bersihkan tag dari teks agar tidak bocor)
+    const { speechText, lang, cleanText: textNoSpeech } = AudioService.extractSpeechText(cleanExplanation);
 
-    let finalResponse = cleanExplanation;
+    // Simpan riwayat percakapan ke memori permanen (tanpa tag metadata)
+    this.sessionService.appendChatHistory(userPhone, text, textNoSpeech);
+
+    let finalResponse = textNoSpeech;
     if (xpEarned > 0) {
       const reward = this.gamification.recordInteractionReward({
         userPhone,
@@ -308,15 +311,17 @@ export class MessageRouter {
       }
     }
 
-    // 3. Cek apakah perlu balasan suara / audio VN (misal diminta siswa atau latihan speaking/listening)
+    // 4. Generate balasan Voice Note audio jika ada [SPEECH], latihan speaking/listening, atau diminta siswa
     let audioBuffer: Buffer | null = null;
-    const isAudioRequested = AudioService.isAudioRequested(text) || (detectedSubject?.code === 'ENG' && (cleanLower.includes('speaking') || cleanLower.includes('listening') || cleanLower.includes('dengar') || cleanLower.includes('suara')));
-    if (isAudioRequested) {
-      const { speechText, lang } = AudioService.extractSpeechText(cleanExplanation);
+    const isAudioRequested = AudioService.isAudioRequested(text) ||
+      (detectedSubject?.code === 'ENG' && (cleanLower.includes('speaking') || cleanLower.includes('listening') || cleanLower.includes('dengar') || cleanLower.includes('suara'))) ||
+      (speechText && speechText.length > 3);
+
+    if (isAudioRequested && speechText) {
       audioBuffer = await this.audioService.generateVoiceNoteBuffer(speechText, lang);
     }
 
-    // 4. Cek jika siswa secara spesifik meminta gambar/diagram visual tetapi belum ada tag diagram
+    // 5. Cek jika siswa secara spesifik meminta gambar/diagram visual tetapi belum ada tag diagram
     if (!imageBuffer && MessageRouter.isVisualRequested(text)) {
       imageBuffer = await this.diagramService.generateConceptIllustration(`${subjectName} ${text}`);
     }
