@@ -162,12 +162,40 @@ export class MessageRouter {
     return text;
   }
 
+  private findSubjectByQuery(query: string) {
+    const q = query.toLowerCase().trim();
+    if (!q) return undefined;
+
+    // 1. Cek langsung via ID (misal: "1", "2", "5")
+    const byId = this.sessionService.getSubjectById(q);
+    if (byId) return byId;
+
+    // 2. Cek kecocokan nama, kode, atau kata kunci umum
+    return SessionService.SUBJECTS.find((s) => {
+      const sName = s.name.toLowerCase();
+      const sCode = s.code.toLowerCase();
+
+      // Cocok langsung kode atau nama
+      if (q === sCode || q === sName) return true;
+
+      // Pencocokan kata kunci per mapel
+      if (sCode === 'pai' && (/\b(pai|agama|islam|fiqih|akhlak|aqidah|hadis|hadits|qur'?an)\b/i.test(q))) return true;
+      if (sCode === 'math' && (/\b(matematika|mtk|math|aljabar|geometri|kalkulus|hitung)\b/i.test(q))) return true;
+      if (sCode === 'phys' && (/\b(fisika|physics|ipa|sains|newton|gaya|energi)\b/i.test(q))) return true;
+      if (sCode === 'eng' && (/\b(inggris|english|b\.inggris|bahasa inggris|grammar|tenses|vocab)\b/i.test(q))) return true;
+      if (sCode === 'hist' && (/\b(sejarah|history|kemerdekaan|kerajaan|pahlawan)\b/i.test(q))) return true;
+      if (sCode === 'inf' && (/\b(informatika|komputer|coding|koding|pemrograman|it)\b/i.test(q))) return true;
+
+      return q.includes(sName) || q.includes(sCode);
+    });
+  }
+
   private async handleSubjectSelection(userPhone: string, text: string): Promise<string> {
     const session = this.sessionService.getSession(userPhone);
-    const subject = this.sessionService.getSubjectById(text);
+    const subject = this.findSubjectByQuery(text);
 
     if (!subject) {
-      return `❌ Nomor mapel tidak valid. Silakan ketik angka mapel yang sesuai (1 - ${SessionService.SUBJECTS.length}):`;
+      return `❌ Mata pelajaran tidak ditemukan. Silakan ketik angka mapel yang sesuai (1 - ${SessionService.SUBJECTS.length}) atau nama pelajarannya:`;
     }
 
     session.activeSubjectId = subject.id;
@@ -181,26 +209,52 @@ export class MessageRouter {
 
     // Default ke Mode Tutor Q&A
     session.state = 'TUTOR_QA';
+    session.chatHistory = []; // Mulai percakapan baru untuk mapel ini
     this.sessionService.updateSession(session);
 
     let res = `🎉 *Kamu telah memilih Mapel: ${subject.icon} ${subject.name}*\n\n`;
     res += `Sekarang kamu ada di mode *Tutor AI Interaktif (Panduan Belajar)* 💡.\n`;
     res += `Kirimkan pertanyaan, foto soal, atau voice note seputar ${subject.name}.\n`;
-    res += `_AI Tutor akan memandu langkah demi langkah dan membantumu menemukan jawabannya sendiri secara mandiri!_\n\n`;
+    res += `_AI Tutor akan memandu langkah demi langkah dan membantumu memahami materi secara mandiri!_\n\n`;
     res += `💡 _Ketik *KUIS* kapan saja untuk uji kemampuan & kumpulkan XP!_`;
     return res;
   }
 
   private async handleTutorQA(userPhone: string, text: string): Promise<string> {
     const session = this.sessionService.getSession(userPhone);
-    const subject = this.sessionService.getSubjectById(session.activeSubjectId || '1');
-    const subjectName = subject ? subject.name : 'Umum';
+    const cleanLower = text.toLowerCase().trim();
 
-    if (text.toLowerCase() === 'kuis') {
+    if (cleanLower === 'kuis') {
+      const currentSubject = this.sessionService.getSubjectById(session.activeSubjectId || '1');
+      const subjectName = currentSubject ? currentSubject.name : 'Umum';
       session.state = 'QUIZ_IN_PROGRESS';
       this.sessionService.updateSession(session);
       return await this.startQuizForSubject(userPhone, subjectName);
     }
+
+    // Cek jika siswa ingin berganti mata pelajaran secara langsung
+    const detectedSubject = this.findSubjectByQuery(text);
+    const isIntentToSwitch = /\b(mau belajar|ganti|pindah|belajar|pelajaran|mapel|buka)\b/i.test(cleanLower) ||
+      (detectedSubject && cleanLower === detectedSubject.code.toLowerCase()) ||
+      (detectedSubject && cleanLower === detectedSubject.name.toLowerCase());
+
+    if (detectedSubject && detectedSubject.id !== session.activeSubjectId && isIntentToSwitch) {
+      session.activeSubjectId = detectedSubject.id;
+      session.chatHistory = []; // Reset riwayat chat agar tidak terkontaminasi mapel lama
+      this.sessionService.updateSession(session);
+
+      // Jika hanya deklarasi pindah mapel tanpa soal spesifik
+      const pureSubjectDeclaration = cleanLower.replace(/\b(aku|saya|mau|pengen|ingin|belajar|pelajaran|mapel|ganti|ke|pindah|ya|dong)\b/gi, '').trim();
+      if (pureSubjectDeclaration.length < 15) {
+        let res = `🎉 *Beralih ke Mata Pelajaran: ${detectedSubject.icon} ${detectedSubject.name}*\n\n`;
+        res += `Siap! Sekarang kita fokus belajar *${detectedSubject.name}* 💡.\n`;
+        res += `Apa materi, bab, atau pertanyaan yang ingin kamu bahas hari ini?`;
+        return res;
+      }
+    }
+
+    const currentSubject = this.sessionService.getSubjectById(session.activeSubjectId || '1');
+    const subjectName = currentSubject ? currentSubject.name : 'Umum';
 
     // Ambil konteks potongan kurikulum sekolah yang relevan menggunakan RAG Engine
     const curriculumContext = this.curriculumService.getRelevantContext(subjectName, text);
