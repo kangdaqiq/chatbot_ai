@@ -37,14 +37,14 @@ export class AudioService {
 
   /**
    * Mengekstrak HANYA bagian kalimat/dialog yang perlu diucapkan via Voice Note
-   * (Menghilangkan basa-basi pembuka teks, petunjuk mengetik, dan menyaring kutipan target latihan)
+   * Audio HANYA di-generate jika AI secara eksplisit menyertakan tag [SPEECH] atau user meminta audio
    */
-  public static extractSpeechText(rawText: string): { speechText: string; lang: 'en' | 'id'; cleanText: string } {
+  public static extractSpeechText(rawText: string, isForcedAudio: boolean = false): { speechText: string; lang: 'en' | 'id'; cleanText: string } {
     let cleanText = rawText;
     let speechText = '';
     let lang: 'en' | 'id' = 'id';
 
-    // 1. Tag eksplisit [SPEECH:en] ... [/SPEECH]
+    // 1. Tag eksplisit [SPEECH:en] ... [/SPEECH] (Prioritas Utama & Paling Presisi)
     const speechMatch = rawText.match(/\[SPEECH(?::([a-z]+))?\]([\s\S]*?)\[\/SPEECH\]/i);
     if (speechMatch) {
       lang = (speechMatch[1] || 'id').toLowerCase() as 'en' | 'id';
@@ -53,24 +53,27 @@ export class AudioService {
       return { speechText, lang, cleanText };
     }
 
-    // 2. Deteksi kutipan target audio (misal: 🎵 "First, boil two cups..." atau "...")
-    const quoteMatch = rawText.match(/(?:🎵|🎧|🔊|🎙️|🗣️)?\s*["“]([A-Za-z0-9\s,.'!?-]{10,250})["”]/);
-    if (quoteMatch) {
-      speechText = quoteMatch[1].trim();
+    // 2. Hanya lakukan ekstraksi kutipan jika user secara EKSPLISIT meminta audio/voice note
+    if (isForcedAudio) {
+      const quoteMatch = rawText.match(/(?:🎵|🎧|🔊|🎙️|🗣️)?\s*["“]([A-Za-z0-9\s,.'!?-]{10,250})["”]/);
+      if (quoteMatch) {
+        speechText = quoteMatch[1].trim();
+        lang = AudioService.detectLanguage(speechText);
+        return { speechText, lang, cleanText };
+      }
+
+      // Ambil materi inti
+      const paragraphs = rawText
+        .split(/\n+/)
+        .map((p) => p.trim())
+        .filter((p) => p.length > 10 && !p.startsWith('Wah,') && !p.startsWith('Halo') && !p.startsWith('Coba') && !p.startsWith('+'));
+
+      speechText = paragraphs.find((p) => AudioService.detectLanguage(p) === 'en') || paragraphs[0] || rawText;
       lang = AudioService.detectLanguage(speechText);
       return { speechText, lang, cleanText };
     }
 
-    // 3. Jika berupa latihan conversation/listening umum, ambil kalimat materi intinya saja
-    const paragraphs = rawText
-      .split(/\n+/)
-      .map((p) => p.trim())
-      .filter((p) => p.length > 10 && !p.startsWith('Wah,') && !p.startsWith('Halo') && !p.startsWith('Coba') && !p.startsWith('+'));
-
-    speechText = paragraphs.find((p) => p.includes('"') || p.includes('🎵') || AudioService.detectLanguage(p) === 'en') || paragraphs[0] || rawText;
-    lang = AudioService.detectLanguage(speechText);
-
-    return { speechText, lang, cleanText };
+    return { speechText: '', lang: 'id', cleanText };
   }
 
   /**

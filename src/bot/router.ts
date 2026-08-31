@@ -150,9 +150,12 @@ export class MessageRouter {
       }
     }
 
-    // Generate Balasan Voice Note Dua Arah (Hanya teks yang dibutuhkan saja)
-    const { speechText, lang } = AudioService.extractSpeechText(cleanExplanation);
-    const audioBuffer = await this.audioService.generateVoiceNoteBuffer(speechText, lang);
+    // Generate Balasan Voice Note Dua Arah
+    const { speechText, lang, cleanText: textNoSpeech } = AudioService.extractSpeechText(cleanExplanation, true);
+    let audioBuffer: Buffer | null = null;
+    if (speechText && speechText.length > 2) {
+      audioBuffer = await this.audioService.generateVoiceNoteBuffer(speechText, lang);
+    }
 
     return {
       text: finalResponse,
@@ -289,7 +292,8 @@ export class MessageRouter {
     const { text: cleanExplanation, xpEarned, reason } = GeminiService.parseInteractionEvaluation(textNoDiagram);
 
     // 3. Ekstrak bagian audio [SPEECH] (dan bersihkan tag dari teks agar tidak bocor)
-    const { speechText, lang, cleanText: textNoSpeech } = AudioService.extractSpeechText(cleanExplanation);
+    const isUserExplicitlyAskingAudio = AudioService.isAudioRequested(text);
+    const { speechText, lang, cleanText: textNoSpeech } = AudioService.extractSpeechText(cleanExplanation, isUserExplicitlyAskingAudio);
 
     // Simpan riwayat percakapan ke memori permanen (tanpa tag metadata)
     this.sessionService.appendChatHistory(userPhone, text, textNoSpeech);
@@ -311,13 +315,9 @@ export class MessageRouter {
       }
     }
 
-    // 4. Generate balasan Voice Note audio jika ada [SPEECH], latihan speaking/listening, atau diminta siswa
+    // 4. Generate balasan Voice Note audio HANYA jika ada speechText
     let audioBuffer: Buffer | null = null;
-    const isAudioRequested = AudioService.isAudioRequested(text) ||
-      (detectedSubject?.code === 'ENG' && (cleanLower.includes('speaking') || cleanLower.includes('listening') || cleanLower.includes('dengar') || cleanLower.includes('suara'))) ||
-      (speechText && speechText.length > 3);
-
-    if (isAudioRequested && speechText) {
+    if (speechText && speechText.length > 2) {
       audioBuffer = await this.audioService.generateVoiceNoteBuffer(speechText, lang);
     }
 
