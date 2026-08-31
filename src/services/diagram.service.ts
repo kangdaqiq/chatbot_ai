@@ -100,8 +100,38 @@ graph TD
   B --> C[${req.data.end || 'Hasil C'}]
 `;
     const cleanCode = mermaidCode.trim();
-    const url = `https://quickchart.io/mermaid?src=${encodeURIComponent(cleanCode)}&bkg=white&width=700`;
-    return await this.fetchImageBuffer(url);
+    try {
+      // mermaid.ink menghasilkan gambar JPEG/PNG berkualitas tinggi langsung dari base64 Mermaid code
+      const b64 = Buffer.from(cleanCode).toString('base64');
+      const url = `https://mermaid.ink/img/${b64}?bgColor=white`;
+      const buf = await this.fetchImageBuffer(url);
+      if (buf && buf.length > 500) return buf;
+    } catch (err) {
+      console.error('mermaid.ink render failed:', err);
+    }
+
+    // Fallback ke QuickChart Graphviz
+    try {
+      const graphvizCode = `digraph G { rankdir=LR; node [shape=box, style="filled,rounded", fillcolor="#e0e7ff", color="#4338ca", fontname="sans-serif"]; "Tahap 1" -> "Tahap 2" -> "Tahap 3"; }`;
+      const gvUrl = `https://quickchart.io/graphviz?graph=${encodeURIComponent(graphvizCode)}`;
+      return await this.fetchImageBuffer(gvUrl);
+    } catch {}
+
+    return null;
+  }
+
+  /**
+   * 5. Ilustrasi Konsep Sains & Edukasi Terlabel (Siklus Air, Fotosintesis, Sistem Organ, dsb)
+   */
+  public async generateConceptIllustration(topic: string): Promise<Buffer | null> {
+    try {
+      const prompt = `detailed educational textbook diagram of ${topic}, clearly labeled with terms, clean 2D science illustration, white background, sharp quality`;
+      const url = `https://image.pollinations.ai/prompt/${encodeURIComponent(prompt)}?width=800&height=500&nologo=true`;
+      return await this.fetchImageBuffer(url);
+    } catch (err) {
+      console.error('Error generating concept illustration:', err);
+      return null;
+    }
   }
 
   /**

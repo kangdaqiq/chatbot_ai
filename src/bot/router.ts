@@ -316,11 +316,40 @@ export class MessageRouter {
       audioBuffer = await this.audioService.generateVoiceNoteBuffer(cleanExplanation, lang);
     }
 
+    // 4. Cek jika siswa secara spesifik meminta gambar/diagram visual tetapi belum ada tag diagram
+    if (!imageBuffer && MessageRouter.isVisualRequested(text)) {
+      imageBuffer = await this.diagramService.generateConceptIllustration(`${subjectName} ${text}`);
+    }
+
     return {
       text: finalResponse,
       imageBuffer,
       audioBuffer,
     };
+  }
+
+  /**
+   * Mengecek apakah pesan siswa meminta ilustrasi / diagram / gambar materi
+   */
+  public static isVisualRequested(text: string): boolean {
+    const lower = text.toLowerCase();
+    const patterns = [
+      /\bgambar\b/i,
+      /\bgambaran\b/i,
+      /\bdiagram\b/i,
+      /\bbagan\b/i,
+      /\bilustrasi\b/i,
+      /\bfoto\b/i,
+      /\bgrafik\b/i,
+      /\bsiklus\b/i,
+      /\bskema\b/i,
+      /kasih gambar/i,
+      /minta gambar/i,
+      /tunjukin/i,
+      /lihat gambar/i,
+      /mau tau gambar/i,
+    ];
+    return patterns.some((p) => p.test(lower));
   }
 
   private async startQuizForSubject(userPhone: string, subjectName: string): Promise<string> {
