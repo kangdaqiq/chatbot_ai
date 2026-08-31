@@ -13,8 +13,9 @@ async function runSimulator() {
   const router = new MessageRouter();
   const simulatedUserPhone = '6281234567890';
 
-  const initialGreeting = await router.handleMessage(simulatedUserPhone, 'menu');
-  console.log(`🤖 BOT WA:\n${initialGreeting}\n`);
+  const initialGreeting = await router.handleMessage(simulatedUserPhone, 'Halo');
+  const greetingText = typeof initialGreeting === 'string' ? initialGreeting : initialGreeting.text;
+  console.log(`🤖 BOT WA:\n${greetingText}\n`);
 
   const rl = readline.createInterface({
     input: process.stdin,
@@ -32,7 +33,8 @@ async function runSimulator() {
       if (input.trim().length > 0) {
         console.log('⏳ Bot sedang memikirkan balasan...');
         const botResponse = await router.handleMessage(simulatedUserPhone, input);
-        console.log(`\n🤖 BOT WA:\n${botResponse}\n`);
+        const reply = typeof botResponse === 'string' ? botResponse : botResponse.text;
+        console.log(`\n🤖 BOT WA:\n${reply}\n`);
       }
 
       promptUser();

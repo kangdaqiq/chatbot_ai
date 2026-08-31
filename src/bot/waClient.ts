@@ -140,8 +140,16 @@ export class WhatsAppClient extends EventEmitter {
             const imageBase64 = buffer.toString('base64');
             const mimeType = imageMsg.mimetype || 'image/jpeg';
 
-            const replyText = await this.router.handleImageMessage(remoteJid, imageBase64, mimeType, text);
-            await this.sock?.sendMessage(remoteJid, { text: replyText });
+            const res = await this.router.handleImageMessage(remoteJid, imageBase64, mimeType, text);
+            if (res.imageBuffer) {
+              await this.sock?.sendMessage(remoteJid, { image: res.imageBuffer, caption: '📊 *Diagram / Visualisasi Konsep*' });
+            }
+            if (res.audioBuffer) {
+              await this.sock?.sendMessage(remoteJid, { audio: res.audioBuffer, mimetype: 'audio/mp4', ptt: true });
+            }
+            if (res.text) {
+              await this.sock?.sendMessage(remoteJid, { text: res.text });
+            }
             this.emitLog(`📤 [BALASAN FOTO] terkirim ke ${senderPhone}`);
           } catch (err) {
             console.error(err);
@@ -157,11 +165,23 @@ export class WhatsAppClient extends EventEmitter {
             const audioBase64 = buffer.toString('base64');
             const mimeType = audioMsg.mimetype || 'audio/ogg; codecs=opus';
 
-            const replyText = await this.router.handleAudioMessage(remoteJid, audioBase64, mimeType);
+            const res = await this.router.handleAudioMessage(remoteJid, audioBase64, mimeType);
 
-            // Kirim Balasan Teks Penjelasan (Tanpa Voice Note balasan)
-            await this.sock?.sendMessage(remoteJid, { text: replyText });
-            this.emitLog(`📤 [BALASAN TEKS] terkirim ke ${senderPhone}`);
+            // Kirim Diagram Gambar jika ada
+            if (res.imageBuffer) {
+              await this.sock?.sendMessage(remoteJid, { image: res.imageBuffer, caption: '📊 *Diagram / Visualisasi Konsep*' });
+            }
+
+            // Kirim Balasan Voice Note Dua Arah (Dua Arah Audio VN)
+            if (res.audioBuffer) {
+              await this.sock?.sendMessage(remoteJid, { audio: res.audioBuffer, mimetype: 'audio/mp4', ptt: true });
+            }
+
+            // Kirim Balasan Teks Penjelasan
+            if (res.text) {
+              await this.sock?.sendMessage(remoteJid, { text: res.text });
+            }
+            this.emitLog(`📤 [BALASAN VN & TEKS] terkirim ke ${senderPhone}`);
           } catch (err) {
             console.error('Error processing audio voice note:', err);
           }
@@ -173,8 +193,22 @@ export class WhatsAppClient extends EventEmitter {
         this.emitLog(`📩 [PESAN MASUK] ${senderPhone}: "${text}"`);
 
         try {
-          const replyText = await this.router.handleMessage(remoteJid, text);
-          await this.sock?.sendMessage(remoteJid, { text: replyText });
+          const res = await this.router.handleMessage(remoteJid, text);
+
+          // Kirim Diagram Gambar jika ada
+          if (res.imageBuffer) {
+            await this.sock?.sendMessage(remoteJid, { image: res.imageBuffer, caption: '📊 *Diagram / Visualisasi Konsep*' });
+          }
+
+          // Kirim Balasan Voice Note jika diminta / sesi speaking
+          if (res.audioBuffer) {
+            await this.sock?.sendMessage(remoteJid, { audio: res.audioBuffer, mimetype: 'audio/mp4', ptt: true });
+          }
+
+          // Kirim Balasan Teks
+          if (res.text) {
+            await this.sock?.sendMessage(remoteJid, { text: res.text });
+          }
           this.emitLog(`📤 [BALASAN TERKIRIM] ke ${senderPhone}`);
         } catch (err) {
           console.error(err);

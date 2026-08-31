@@ -180,4 +180,22 @@ export class AudioService {
     ];
     return patterns.some((p) => p.test(lower));
   }
+
+  /**
+   * Mendeteksi bahasa dominan ('en' untuk Bahasa Inggris native speaker, 'id' untuk Bahasa Indonesia)
+   */
+  public static detectLanguage(text: string): 'en' | 'id' {
+    const lower = text.toLowerCase();
+    const englishWords = [
+      'the', 'is', 'are', 'you', 'how', 'what', 'why', 'can', 'could',
+      'good', 'morning', 'hello', 'practice', 'speaking', 'pronunciation',
+      'repeat', 'sentence', 'english', 'grammar', 'vocabulary', 'listen',
+      'say', 'great', 'awesome', 'today', 'let\'s'
+    ];
+    let matches = 0;
+    for (const w of englishWords) {
+      if (new RegExp(`\\b${w}\\b`, 'i').test(lower)) matches++;
+    }
+    return matches >= 2 ? 'en' : 'id';
+  }
 }

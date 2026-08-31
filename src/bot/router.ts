@@ -3,8 +3,16 @@ import { SessionService } from '../services/session.service';
 import { CurriculumService } from '../services/curriculum.service';
 import { GamificationService } from '../services/gamification.service';
 import { AudioService } from '../services/audio.service';
+import { DiagramService } from '../services/diagram.service';
 import { DataStore } from '../web/dataStore';
 import { Quiz, QuizQuestion, UserSession } from '../models/types';
+
+export interface RouterResponse {
+  text: string;
+  audioBuffer?: Buffer | null;
+  imageBuffer?: Buffer | null;
+  imageCaption?: string;
+}
 
 export class MessageRouter {
   private gemini: GeminiService;
@@ -12,6 +20,7 @@ export class MessageRouter {
   private curriculumService: CurriculumService;
   private gamification: GamificationService;
   private audioService: AudioService;
+  private diagramService: DiagramService;
   private dataStore: DataStore;
 
   constructor() {
@@ -20,6 +29,7 @@ export class MessageRouter {
     this.curriculumService = new CurriculumService();
     this.gamification = new GamificationService();
     this.audioService = new AudioService();
+    this.diagramService = new DiagramService();
     this.dataStore = new DataStore();
   }
 
@@ -31,10 +41,17 @@ export class MessageRouter {
     return this.audioService;
   }
 
+  public getDiagramService(): DiagramService {
+    return this.diagramService;
+  }
+
   /**
    * Main Handler untuk memproses setiap pesan masuk dari WhatsApp
    */
-  async handleMessage(userPhone: string, text: string): Promise<string> {
+  /**
+   * Main Handler untuk memproses setiap pesan masuk dari WhatsApp
+   */
+  async handleMessage(userPhone: string, text: string): Promise<RouterResponse> {
     const session = this.sessionService.getSession(userPhone);
     const cleanText = text.trim();
     const lowerText = cleanText.toLowerCase();
@@ -45,18 +62,21 @@ export class MessageRouter {
         session.state = 'TUTOR_QA';
         session.activeQuiz = undefined;
         this.sessionService.updateSession(session);
-        return `✅ *Sesi kuis dihentikan.* Kamu kembali ke mode diskusi belajar dengan AI Tutor! 💡\nSilakan tanyakan materi apa pun yang ingin kamu pelajari.`;
+        return {
+          text: `✅ *Sesi kuis dihentikan.* Kamu kembali ke mode diskusi belajar dengan AI Tutor! 💡\nSilakan tanyakan materi apa pun yang ingin kamu pelajari.`,
+        };
       }
-      return this.handleQuizInProgress(userPhone, cleanText);
+      const quizReply = this.handleQuizInProgress(userPhone, cleanText);
+      return { text: quizReply };
     }
 
     // 2. Direct Shortcuts untuk Leaderboard & Profil
     if (lowerText === 'leaderboard' || lowerText === 'rank' || lowerText === 'peringkat') {
-      return this.renderLeaderboard(userPhone);
+      return { text: this.renderLeaderboard(userPhone) };
     }
 
     if (lowerText === 'profil' || lowerText === 'profile' || lowerText === 'skor' || lowerText === 'nilai' || lowerText === 'xp') {
-      return this.renderProfile(userPhone);
+      return { text: this.renderProfile(userPhone) };
     }
 
     // 3. Shortcut Kuis Interaktif
@@ -65,7 +85,8 @@ export class MessageRouter {
       const subjectName = currentSubject ? currentSubject.name : 'Umum';
       session.state = 'QUIZ_IN_PROGRESS';
       this.sessionService.updateSession(session);
-      return await this.startQuizForSubject(userPhone, subjectName);
+      const quizStart = await this.startQuizForSubject(userPhone, subjectName);
+      return { text: quizStart };
     }
 
     // 4. Shortcut Bantuan / Panduan Belajar
@@ -74,23 +95,24 @@ export class MessageRouter {
       help += `Silakan langsung kirim pertanyaan atau materi sekolah yang ingin kamu pelajari! AI Tutor siap membimbingmu langkah demi langkah 💡.\n\n`;
       help += `• 💬 *Tanya Belajar*: Ketik pertanyaanmu secara bebas (Matematika, IPA/Fisika, PAI, Bahasa Inggris, Sejarah, Informatika, dsb).\n`;
       help += `• 📸 *Foto Soal*: Kirim foto tugas/soal untuk dibahas konsep & cara penyelesaiannya bersama.\n`;
-      help += `• 🎙️ *Voice Note*: Kirim rekaman suara jika ingin bertanya via audio.\n`;
+      help += `• 🎙️ *Voice Note*: Kirim rekaman suara jika ingin bertanya via audio (bisa latihan speaking bahasa Inggris).\n`;
+      help += `• 📊 *Diagram Edukatif*: Tanyakan konsep geometri/grafik, AI Tutor akan mengirimkan ilustrasi visual!\n`;
       help += `• 📝 *Kuis*: Ketik *KUIS* untuk latihan soal berpikir kritis & menguji pemahaman.\n`;
       help += `• 🏆 *Leaderboard*: Ketik *LEADERBOARD* untuk cek peringkat keaktifan kelas.\n`;
       help += `• ⭐ *Profil*: Ketik *PROFIL* untuk melihat total XP, level, dan medali prestasimu.\n`;
-      return help;
+      return { text: help };
     }
 
     // 5. SEMUA PESAN LAINNYA LANGSUNG DIPROSES OLEH AI TUTOR (Direct Conversational Learning)
     session.state = 'TUTOR_QA';
     this.sessionService.updateSession(session);
-    return this.handleTutorQA(userPhone, cleanText);
+    return await this.handleTutorQA(userPhone, cleanText);
   }
 
   /**
    * Handler khusus untuk memproses pesan suara / Voice Note (PTT) yang dikirim siswa
    */
-  async handleAudioMessage(userPhone: string, audioBase64: string, mimeType: string): Promise<string> {
+  async handleAudioMessage(userPhone: string, audioBase64: string, mimeType: string): Promise<RouterResponse> {
     const session = this.sessionService.getSession(userPhone);
 
     const subject = this.sessionService.getSubjectById(session.activeSubjectId || '');
@@ -98,7 +120,15 @@ export class MessageRouter {
 
     // Panggil Gemini Multimodal Audio untuk mendengarkan dan menjawab suara siswa
     const rawExplanation = await this.gemini.explainAudioConcept(subjectName, audioBase64, mimeType, session.chatHistory);
-    const { text: cleanExplanation, xpEarned, reason } = GeminiService.parseInteractionEvaluation(rawExplanation);
+    
+    // Ekstrak tag diagram visual jika ada
+    const { cleanText: textNoDiagram, diagramReq } = DiagramService.parseDiagramTag(rawExplanation);
+    let imageBuffer: Buffer | null = null;
+    if (diagramReq) {
+      imageBuffer = await this.diagramService.generateDiagramBuffer(diagramReq);
+    }
+
+    const { text: cleanExplanation, xpEarned, reason } = GeminiService.parseInteractionEvaluation(textNoDiagram);
 
     // Simpan ke riwayat percakapan
     this.sessionService.appendChatHistory(userPhone, '[Voice Note Siswa]', cleanExplanation);
@@ -120,13 +150,21 @@ export class MessageRouter {
       }
     }
 
-    return finalResponse;
+    // Generate Balasan Voice Note Dua Arah (Dua Arah Audio VN)
+    const lang = AudioService.detectLanguage(cleanExplanation);
+    const audioBuffer = await this.audioService.generateVoiceNoteBuffer(cleanExplanation, lang);
+
+    return {
+      text: finalResponse,
+      audioBuffer,
+      imageBuffer,
+    };
   }
 
   /**
    * Handler khusus untuk memproses gambar/foto yang dikirim siswa
    */
-  async handleImageMessage(userPhone: string, imageBase64: string, mimeType: string, caption?: string): Promise<string> {
+  async handleImageMessage(userPhone: string, imageBase64: string, mimeType: string, caption?: string): Promise<RouterResponse> {
     const session = this.sessionService.getSession(userPhone);
 
     // Ambil mata pelajaran aktif jika siswa sudah memilih, atau gunakan 'Umum'
@@ -135,7 +173,15 @@ export class MessageRouter {
 
     // Panggil Gemini Multimodal (Vision)
     const rawExplanation = await this.gemini.explainImageConcept(subjectName, imageBase64, mimeType, caption);
-    const { text: cleanExplanation, xpEarned, reason } = GeminiService.parseInteractionEvaluation(rawExplanation);
+    
+    // Ekstrak tag diagram visual jika ada
+    const { cleanText: textNoDiagram, diagramReq } = DiagramService.parseDiagramTag(rawExplanation);
+    let imageBuffer: Buffer | null = null;
+    if (diagramReq) {
+      imageBuffer = await this.diagramService.generateDiagramBuffer(diagramReq);
+    }
+
+    const { text: cleanExplanation, xpEarned, reason } = GeminiService.parseInteractionEvaluation(textNoDiagram);
 
     let finalResponse = cleanExplanation;
     if (xpEarned > 0) {
@@ -154,7 +200,10 @@ export class MessageRouter {
       }
     }
 
-    return finalResponse;
+    return {
+      text: finalResponse,
+      imageBuffer,
+    };
   }
 
   private findSubjectByQuery(query: string) {
@@ -185,37 +234,7 @@ export class MessageRouter {
     });
   }
 
-  private async handleSubjectSelection(userPhone: string, text: string): Promise<string> {
-    const session = this.sessionService.getSession(userPhone);
-    const subject = this.findSubjectByQuery(text);
-
-    if (!subject) {
-      return `❌ Mata pelajaran tidak ditemukan. Silakan ketik angka mapel yang sesuai (1 - ${SessionService.SUBJECTS.length}) atau nama pelajarannya:`;
-    }
-
-    session.activeSubjectId = subject.id;
-
-    // Jika user berada di alur Kuis
-    if (session.activeQuiz || text === '2') {
-      session.state = 'QUIZ_IN_PROGRESS';
-      this.sessionService.updateSession(session);
-      return await this.startQuizForSubject(userPhone, subject.name);
-    }
-
-    // Default ke Mode Tutor Q&A
-    session.state = 'TUTOR_QA';
-    session.chatHistory = []; // Mulai percakapan baru untuk mapel ini
-    this.sessionService.updateSession(session);
-
-    let res = `🎉 *Kamu telah memilih Mapel: ${subject.icon} ${subject.name}*\n\n`;
-    res += `Sekarang kamu ada di mode *Tutor AI Interaktif (Panduan Belajar)* 💡.\n`;
-    res += `Kirimkan pertanyaan, foto soal, atau voice note seputar ${subject.name}.\n`;
-    res += `_AI Tutor akan memandu langkah demi langkah dan membantumu memahami materi secara mandiri!_\n\n`;
-    res += `💡 _Ketik *KUIS* kapan saja untuk uji kemampuan & kumpulkan XP!_`;
-    return res;
-  }
-
-  private async handleTutorQA(userPhone: string, text: string): Promise<string> {
+  private async handleTutorQA(userPhone: string, text: string): Promise<RouterResponse> {
     const session = this.sessionService.getSession(userPhone);
     const cleanLower = text.toLowerCase().trim();
 
@@ -224,7 +243,8 @@ export class MessageRouter {
       const subjectName = currentSubject ? currentSubject.name : 'Umum';
       session.state = 'QUIZ_IN_PROGRESS';
       this.sessionService.updateSession(session);
-      return await this.startQuizForSubject(userPhone, subjectName);
+      const quizMsg = await this.startQuizForSubject(userPhone, subjectName);
+      return { text: quizMsg };
     }
 
     // Cek jika siswa ingin berganti mata pelajaran secara langsung
@@ -244,7 +264,7 @@ export class MessageRouter {
         let res = `🎉 *Beralih ke Mata Pelajaran: ${detectedSubject.icon} ${detectedSubject.name}*\n\n`;
         res += `Siap! Sekarang kita fokus belajar *${detectedSubject.name}* 💡.\n`;
         res += `Apa materi, bab, atau pertanyaan yang ingin kamu bahas hari ini?`;
-        return res;
+        return { text: res };
       }
     }
 
@@ -257,7 +277,16 @@ export class MessageRouter {
 
     // Tanya AI Gemini untuk menjelaskan materi dengan riwayat percakapan
     const rawExplanation = await this.gemini.explainConcept(subjectName, text, curriculumContext, history);
-    const { text: cleanExplanation, xpEarned, reason } = GeminiService.parseInteractionEvaluation(rawExplanation);
+
+    // 1. Ekstrak tag diagram visual jika ada
+    const { cleanText: textNoDiagram, diagramReq } = DiagramService.parseDiagramTag(rawExplanation);
+    let imageBuffer: Buffer | null = null;
+    if (diagramReq) {
+      imageBuffer = await this.diagramService.generateDiagramBuffer(diagramReq);
+    }
+
+    // 2. Ekstrak evaluasi gamifikasi XP
+    const { text: cleanExplanation, xpEarned, reason } = GeminiService.parseInteractionEvaluation(textNoDiagram);
 
     // Simpan riwayat percakapan ke memori permanen (tanpa tag metadata)
     this.sessionService.appendChatHistory(userPhone, text, cleanExplanation);
@@ -279,7 +308,19 @@ export class MessageRouter {
       }
     }
 
-    return finalResponse;
+    // 3. Cek apakah perlu balasan suara / audio VN (misal diminta siswa atau latihan speaking)
+    let audioBuffer: Buffer | null = null;
+    const isAudioRequested = AudioService.isAudioRequested(text) || (detectedSubject?.code === 'ENG' && cleanLower.includes('speaking'));
+    if (isAudioRequested) {
+      const lang = AudioService.detectLanguage(cleanExplanation);
+      audioBuffer = await this.audioService.generateVoiceNoteBuffer(cleanExplanation, lang);
+    }
+
+    return {
+      text: finalResponse,
+      imageBuffer,
+      audioBuffer,
+    };
   }
 
   private async startQuizForSubject(userPhone: string, subjectName: string): Promise<string> {

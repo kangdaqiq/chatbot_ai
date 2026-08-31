@@ -232,12 +232,13 @@ app.post('/api/chat-simulate', async (req, res) => {
   const { userPhone, message } = req.body;
   const phone = userPhone || '6281234567890';
   try {
-    const botReply = await waClient.getRouter().handleMessage(phone, message || 'menu');
+    const result = await waClient.getRouter().handleMessage(phone, message || 'Halo');
+    const replyText = typeof result === 'string' ? result : result.text;
     // Jika respon memuat kuis selesai / skor, broadcast update ke dashboard
-    if (botReply.includes('KUIS SELESAI') || botReply.includes('Peringkat Kelas')) {
+    if (replyText.includes('KUIS SELESAI') || replyText.includes('Peringkat Kelas')) {
       broadcast('leaderboard_update', { message: 'Hasil kuis baru masuk' });
     }
-    res.json({ success: true, reply: botReply });
+    res.json({ success: true, reply: replyText });
   } catch (err: any) {
     res.status(500).json({ error: err?.message || 'Error processing message' });
   }
